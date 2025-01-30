@@ -1,0 +1,12 @@
+[flake8]
+format = html
+htmldir = ./flake-report
+count = True
+exit-zero = True
+max-complexity = 10
+max-line-length = 127
+select = F,E,W
+ignore = F811,WPS305,WPS100,WPS404,WPS421,WPS210,WPS210,WPS318,WPS326,WPS237,WPS226,WPS303,WPS214,WPS306,WPS204
+exclude =
+    ./django_admin/config,
+    ./auth/patched.py

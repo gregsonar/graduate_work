@@ -1,0 +1,42 @@
+services:
+  nginx:
+    image: nginx:1.22
+    ports:
+      - "80:80"
+    volumes:
+      - ./conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/opt/app/static
+      - media_volume:/opt/app/media
+    depends_on:
+      auth_api:
+        condition: service_healthy
+      django-admin:
+        condition: service_healthy
+      notification-api-flask:
+        condition: service_started
+    networks:
+      - backend
+      - auth_network
+      - postgres_admin_network
+      - notification_network
+    restart: unless-stopped
+
+include:
+  - admin/docker-compose.admin.yml
+  - auth/docker-compose.auth.yaml
+  - notifications/docker-compose.notifications.yaml
+
+networks:
+  backend:
+    driver: bridge
+    name: backend
+  auth_network:
+    driver: bridge
+    name: auth_network
+  postgres_admin_network:
+    driver: bridge
+    name: postgres_admin_network
+  notification_network:
+    driver: bridge
+    name: notification_network
+

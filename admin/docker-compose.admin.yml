@@ -1,0 +1,50 @@
+name: admin-service
+
+services:
+  postgres_admin:
+    image: postgres:16.0
+    volumes:
+      - admin_postgres_data:/var/lib/postgresql/data
+      - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    env_file: .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DJ_POSTGRES_USER} -d ${DJ_POSTGRES_DB}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - postgres_admin_network
+    restart: unless-stopped
+
+  django-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - DEBUG=${DEBUG}
+    depends_on:
+      postgres_admin:
+        condition: service_healthy
+    volumes:
+      - static_volume:/opt/app/static
+      - media_volume:/opt/app/media
+    healthcheck:
+      test: [ "CMD", "curl", "-v", "-f", "http://django-admin:8000/healthcheck" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - postgres_admin_network
+      - backend
+#    restart: unless-stopped
+
+volumes:
+  admin_postgres_data:
+    name: admin_postgres_data
+  static_volume:
+    name: django_static_volume
+  media_volume:
+    name: django_media_volume

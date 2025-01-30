@@ -1,0 +1,4 @@
+FROM postgres:14.5
+
+# Экспонируем стандартный порт PostgreSQL
+EXPOSE 5432

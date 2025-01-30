@@ -1,0 +1,31 @@
+FROM python:3.12-slim
+
+# Установка клиента PostgreSQL
+RUN apt-get update \
+    && apt-get install -y postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Создаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы конфигурации
+COPY ./db/requirements.txt .
+COPY ./db/alembic.ini /app/auth/db/alembic.ini
+
+
+# Копируем все содержимое auth
+COPY . /app/auth
+
+# Устанавливаем зависимости
+RUN pip install -r requirements.txt
+
+# Устанавливаем PYTHONPATH
+ENV PYTHONPATH=/app
+
+# Копируем и делаем исполняемым скрипт ожидания БД
+COPY ./db/wait-for-db.sh /app/auth/db/wait-for-db.sh
+RUN chmod +x /app/auth/db/wait-for-db.sh
+
+WORKDIR /app/auth/db
+
+CMD ["./wait-for-db.sh"]

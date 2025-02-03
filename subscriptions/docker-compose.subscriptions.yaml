@@ -1,0 +1,36 @@
+services:
+  postgres_subscriptions:
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile.postgres
+    env_file: ./.env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${SUB_POSTGRES_USER} -d ${SUB_POSTGRES_DB}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - subscription_network
+    volumes:
+      - subscription_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  subscriptions_migrations:
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile.migrations
+    env_file: ./.env
+    depends_on:
+      postgres_subscriptions:
+        condition: service_healthy
+    networks:
+      - subscription_network
+
+
+networks:
+  subscription_network:
+    driver: bridge
+
+volumes:
+  subscription_postgres_data:

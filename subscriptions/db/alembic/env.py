@@ -6,7 +6,6 @@ import asyncio
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
-from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
@@ -16,8 +15,6 @@ from subscriptions.models import (Subscription, SubscriptionHistory,
 from subscriptions.models.base_models import Base
 
 from subscriptions.core.config import settings as cf
-load_dotenv()
-
 
 config = context.config
 

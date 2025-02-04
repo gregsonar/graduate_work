@@ -10,17 +10,21 @@ class SubscriptionHistoryManager(ISubscriptionHistoryManager):
     def __init__(self, session: AsyncSession):
         self.session = session
 
+
+
     async def add_record(
         self,
         subscription_id: UUID,
         action: str,
         details: dict | None = None
     ) -> None:
+        print(details)
         history_entry = SubscriptionHistory(
             subscription_id=subscription_id,
             action=action,
-            details=details or {}
+            details={key: str(value) for key, value  in details.items()} or {}
         )
+        print(history_entry)
         self.session.add(history_entry)
         await self.session.commit()
 

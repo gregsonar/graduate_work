@@ -37,8 +37,8 @@ class SubscriptionStatusManager(ISubscriptionStatusManager):
         subscription = await self.repository.get(subscription_id)
         await self.validator.validate_status_transition(
             subscription.status,
-            SubscriptionStatus.CANCELLED
+            SubscriptionStatus.CANCELED
         )
         await self.repository.update(subscription_id, {
-            'status': SubscriptionStatus.CANCELLED
+            'status': SubscriptionStatus.CANCELED
         })

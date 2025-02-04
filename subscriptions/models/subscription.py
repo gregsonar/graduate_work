@@ -1,5 +1,5 @@
 from enum import Enum
-from sqlalchemy import Column, ForeignKey, Boolean, Numeric, String, Enum as SQLEnum, DateTime, Integer
+from sqlalchemy import Column, ForeignKey, Boolean, Numeric, String, Enum as SQLEnum, DateTime, Integer, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -34,8 +34,8 @@ class Subscription(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False)
     plan_type = Column(SQLEnum(SubscriptionPlanType), nullable=False)
     status = Column(SQLEnum(SubscriptionStatus), nullable=False, default=SubscriptionStatus.PENDING)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     is_auto_renewable = Column(Boolean, default=False)
     plan_id = Column(

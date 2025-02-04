@@ -1,12 +1,19 @@
-from datetime import datetime
+from enum import Enum
 from uuid import UUID
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, ConfigDict, model_validator, AwareDatetime
 
 from subscriptions.models.subscription import SubscriptionPlanType, SubscriptionStatus
 
+
+class SubscriptionStatus(str, Enum):
+    ACTIVE = 'active'
+    PENDING = 'pending'
+    CANCELED = 'canceled'
+    EXPIRED = 'expired'
+    SUSPENDED = 'suspended'
 
 class SubscriptionBase(BaseModel):
     """Base subscription attributes"""
@@ -14,13 +21,13 @@ class SubscriptionBase(BaseModel):
         description="Type of subscription plan",
         examples=["basic", "standard", "premium"]
     )
-    start_date: datetime = Field(
+    start_date: AwareDatetime = Field(
         description="Start date of subscription",
-        examples=["2024-02-04T00:00:00Z"]
+        examples=["2025-02-04 19:46:17.266259+00:00"]
     )
-    end_date: datetime = Field(
+    end_date: AwareDatetime = Field(
         description="End date of subscription",
-        examples=["2024-03-04T00:00:00Z"]
+        examples=["2025-02-05 19:46:17.266259+00:00"]
     )
     price: Decimal = Field(
         description="Subscription price",
@@ -50,16 +57,21 @@ class SubscriptionCreate(SubscriptionBase):
 
 class SubscriptionUpdate(BaseModel):
     """Schema for updating subscription details"""
-    end_date: datetime | None = Field(
+    end_date: AwareDatetime | None = Field(
         default=None,
         description="New end date for subscription",
-        examples=["2024-04-04T00:00:00Z"]
+        examples=["2025-02-04 19:46:17.266259+00:00"]
     )
     is_auto_renewable: bool | None = Field(
         default=None,
         description="Update auto-renewal setting"
     )
 
+    status: SubscriptionStatus | None = Field(
+        default=SubscriptionStatus.ACTIVE,
+        description="Subscription Status",
+        examples= [SubscriptionStatus.ACTIVE, SubscriptionStatus.SUSPENDED]
+    )
 
 class SubscriptionSuspend(BaseModel):
     """Schema for suspending a subscription"""
@@ -103,8 +115,8 @@ class SubscriptionResponse(SubscriptionBase):
         description="Current status of subscription",
         examples=["active", "suspended", "cancelled"]
     )
-    created_at: datetime = Field(description="Subscription creation timestamp")
-    updated_at: datetime = Field(description="Last update timestamp")
+    created_at: AwareDatetime = Field(description="Subscription creation timestamp")
+    updated_at: AwareDatetime = Field(description="Last update timestamp")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -114,12 +126,12 @@ class SubscriptionResponse(SubscriptionBase):
                 "user_id": "123e4567-e89b-12d3-a456-426614174001",
                 "plan_type": "premium",
                 "status": "active",
-                "start_date": "2024-02-04T00:00:00Z",
+                "start_date": "2025-02-04 19:46:17.266259+00:00",
                 "end_date": "2024-03-04T00:00:00Z",
                 "price": "29.99",
                 "is_auto_renewable": True,
-                "created_at": "2024-02-04T00:00:00Z",
-                "updated_at": "2024-02-04T00:00:00Z"
+                "created_at": "2025-02-04 19:46:17.266259+00:00",
+                "updated_at": "2025-02-04 19:46:17.266259+00:00"
             }
         }
     )
@@ -137,7 +149,7 @@ class SubscriptionHistoryResponse(BaseModel):
         default=None,
         description="Additional details about the action"
     )
-    created_at: datetime = Field(description="When this action occurred")
+    created_at: AwareDatetime = Field(description="When this action occurred")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -147,7 +159,7 @@ class SubscriptionHistoryResponse(BaseModel):
                 "subscription_id": "123e4567-e89b-12d3-a456-426614174000",
                 "action": "suspended",
                 "details": {"reason": "Payment failure"},
-                "created_at": "2024-02-04T12:00:00Z"
+                "created_at": "2025-02-04 19:46:17.266259+00:00"
             }
         }
     )

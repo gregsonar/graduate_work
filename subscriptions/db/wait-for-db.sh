@@ -24,6 +24,7 @@ echo "Running migrations..."
 # Добавим вывод текущей ревизии для отладки
 alembic current
 echo "Current revision listed above"
+alembic revision --autogenerate
 echo "Applying migrations..."
 alembic upgrade head
 

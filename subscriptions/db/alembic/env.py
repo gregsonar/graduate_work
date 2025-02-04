@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from subscriptions.models import (Subscription, SubscriptionHistory,
                                   SubscriptionPlan, UserSubscription, UserSubscriptionHistory)
 
+from subscriptions.models.base_models import Base
+
 from subscriptions.core.config import settings as cf
 load_dotenv()
 
@@ -29,14 +31,15 @@ def get_database_url():
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-metadata = MetaData()
-# Добавляем метаданные всех моделей
-for model in [Subscription, SubscriptionHistory, SubscriptionPlan, UserSubscription, UserSubscriptionHistory]:
-    for table in model.metadata.tables.values():
-        if table.name not in metadata.tables:
-            table.to_metadata(metadata)
+# metadata = MetaData()
+# # Добавляем метаданные всех моделей
+# for model in [Subscription, SubscriptionHistory, SubscriptionPlan, UserSubscription, UserSubscriptionHistory]:
+#     for table in model.metadata.tables.values():
+#         if table.name not in metadata.tables:
+#             table.to_metadata(metadata)
 
-target_metadata = metadata
+
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

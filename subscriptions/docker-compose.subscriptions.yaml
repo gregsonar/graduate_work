@@ -29,10 +29,28 @@ services:
     networks:
       - subscription_network
 
+  subscriptions_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - DEBUG=${DEBUG}
+    depends_on:
+      postgres_subscriptions:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://subscriptions_api:8000/api/openapi.json" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - subscription_network
+      - backend
+    restart: unless-stopped
+#    ports:
+#      - "8000:8000"
 
-networks:
-  subscription_network:
-    driver: bridge
 
 volumes:
   subscription_postgres_data:

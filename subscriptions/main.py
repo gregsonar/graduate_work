@@ -1,14 +1,14 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, JSONResponse
 
 from subscriptions.core.config import settings
 from subscriptions.api.v1 import subscription_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    docs_url="/api/openapi",
+    docs_url="/sub_openapi",
     openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     # lifespan=lifespan,
@@ -22,6 +22,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if request.url.path.endswith("/sub_openapi"):
+        return await call_next(request)
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Missing authentication"}
+        )
+
+    return await call_next(request)
 
 @app.get("/health")
 async def health_check():

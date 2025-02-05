@@ -19,12 +19,14 @@ services:
       - auth_network
       - postgres_admin_network
       - notification_network
+      - subscription_network
     restart: unless-stopped
 
 include:
   - admin/docker-compose.admin.yml
   - auth/docker-compose.auth.yaml
   - notifications/docker-compose.notifications.yaml
+  - subscriptions/docker-compose.subscriptions.yaml
 
 networks:
   backend:
@@ -39,4 +41,7 @@ networks:
   notification_network:
     driver: bridge
     name: notification_network
+  subscription_network:
+    driver: bridge
+    name: subscription_network
 

@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 
+from subscriptions.models import SubscriptionStatus, Subscription
 from subscriptions.schemas.subscription_schema import (
     SubscriptionCreate,
     SubscriptionUpdate,
@@ -21,6 +22,17 @@ class ISubscriptionRepository(ABC):
 
     @abstractmethod
     async def update(self, subscription_id: UUID, data: dict) -> SubscriptionResponse:
+        pass
+
+    @abstractmethod
+    async def list_subscriptions(
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        user_id: Optional[UUID] = None,
+        status: Optional[SubscriptionStatus] = None,
+        plan_type: Optional[str] = None
+    ) -> List[Subscription]:
         pass
 
 

@@ -1,6 +1,6 @@
 # реализация провайдера платежей для YooKassa
 
-import uuid
+import json
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
@@ -47,6 +47,17 @@ class YooKassaProvider:
 
         except Exception as e:
             raise PaymentCreationError(f"Payment creation failed: {str(e)}")
+
+    def get_payment(self, payment_id: str) -> Dict[str, Any]:
+        try:
+            payment = Payment.find_one(payment_id)
+
+            # Преобразуем JSON-строку в словарь
+            payment_data = json.loads(payment.json())
+            return YooKassaPaymentSchema(**payment_data).dict()
+
+        except Exception as e:
+            raise PaymentStatusError(f"Failed to get payment status: {str(e)}")
 
     def capture_payment(
             self,

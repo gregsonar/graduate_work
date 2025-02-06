@@ -1,8 +1,15 @@
-from fastapi import Depends, Header, HTTPException, status
 import httpx
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette import status
 
+oauth2_scheme = HTTPBearer(
+    scheme_name="Bearer",
+    description="JWT token authentication"
+)
 
-async def get_current_user(authorization: str = Header(...)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    authorization = f"{credentials.scheme} {credentials.credentials}"
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "http://auth_api:8000/api/v1/auth/me",

@@ -28,3 +28,7 @@ class BasePaymentProvider(ABC):
     @abstractmethod
     def handle_webhook(self, event: str, data: Dict) -> None:
         pass
+
+    @abstractmethod
+    def get_payment(self, payment_id: str) -> Dict[str, Any]:
+        pass

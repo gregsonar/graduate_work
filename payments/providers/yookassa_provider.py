@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 import requests
 from yookassa import Configuration, Payment
 
-from payments.exceptions import PaymentCreationError, PaymentCaptureError
+from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
 
 
@@ -15,7 +15,8 @@ class YooKassaProvider:
     def __init__(self, account_id: str, secret_key: str):
         Configuration.configure(account_id, secret_key)
 
-    def _generate_idempotence_key(self) -> str:
+    @staticmethod
+    def _generate_idempotence_key() -> str:
         return str(uuid4())
 
     def create_payment(
@@ -24,6 +25,7 @@ class YooKassaProvider:
             currency: str = "RUB",
             description: str = "",
             metadata: Optional[Dict] = None,
+            capture: bool = False,
             idempotence_key: Optional[UUID] = None
     ) -> Dict[str, Any]:
         try:
@@ -38,12 +40,14 @@ class YooKassaProvider:
                     "type": "redirect",
                     "return_url": "https://your-service.com/return"
                 },
-                "capture": True,
+                "capture": capture,
                 "description": description,
                 "metadata": metadata or {}
             }, idempotence_key)
 
-            return YooKassaPaymentSchema(**payment.json()).dict()
+            # Преобразуем JSON-строку в словарь
+            payment_data = json.loads(payment.json())
+            return YooKassaPaymentSchema(**payment_data).model_dump()
 
         except Exception as e:
             raise PaymentCreationError(f"Payment creation failed: {str(e)}")
@@ -73,7 +77,9 @@ class YooKassaProvider:
                 idempotence_key
             )
 
-            return YooKassaPaymentSchema(**payment.json()).dict()
+            # Преобразуем JSON-строку в словарь
+            payment_data = json.loads(payment.json())
+            return YooKassaPaymentSchema(**payment_data).model_dump()
 
         except Exception as e:
             raise PaymentCaptureError(f"Payment capture failed: {str(e)}")
@@ -88,6 +94,8 @@ class YooKassaProvider:
         handler = handlers.get(event)
         if handler:
             handler(data)
+
+        # todo: add unhandled webhook type exception
 
     def _handle_payment_succeeded(self, data: Dict) -> None:
         # Логика обработки успешного платежа

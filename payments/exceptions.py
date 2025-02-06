@@ -15,3 +15,6 @@ class PaymentCaptureError(PaymentError):
 
 class WebhookValidationError(PaymentError):
     """Ошибка валидации вебхука"""
+
+class PaymentStatusError(PaymentError):
+    """Ошибка при получении статуса платежа"""

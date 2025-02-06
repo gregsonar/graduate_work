@@ -8,9 +8,10 @@ from subscriptions.api.v1 import subscription_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    docs_url="/sub_openapi",
+    docs_url="/api/openapi",
     openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
+    root_path="/api/subscriptions",
     # lifespan=lifespan,
 
 )
@@ -24,19 +25,19 @@ app.add_middleware(
 )
 
 
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    if request.url.path.endswith("/sub_openapi"):
-        return await call_next(request)
-
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Missing authentication"}
-        )
-
-    return await call_next(request)
+# @app.middleware("http")
+# async def auth_middleware(request: Request, call_next):
+#     if request.url.path.endswith("/openapi"):
+#         return await call_next(request)
+#
+#     auth_header = request.headers.get("Authorization")
+#     if not auth_header:
+#         return JSONResponse(
+#             status_code=401,
+#             content={"detail": "Missing authentication"}
+#         )
+#
+#     return await call_next(request)
 
 @app.get("/health")
 async def health_check():

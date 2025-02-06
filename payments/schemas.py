@@ -1,13 +1,17 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+class AmountSchema(BaseModel):
+    value: str
+    currency: str
 
 
-class YooKassaPaymentSchema(BaseModel):
+class YooKassaPaymentSchema(BaseModel, extra='allow'):
     id: str
     status: str
-    amount: dict
-    description: Optional[str]
+    amount: AmountSchema
+    description: Optional[str] = Field(None, description="Описание платежа")
     metadata: dict
     confirmation: dict
 

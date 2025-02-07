@@ -1,237 +1,122 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { useAuthStore } from '../store/auth.store';
-import { authService } from '../api/services';
+import { useNavigate } from 'react-router-dom';
+import { AArrowDown as VK, Mail } from 'lucide-react';
+import { authApi } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
+import type { AuthRequest } from '../types/auth';
 
-const schema = yup.object().shape({
-  username: yup.string().required('Username is required').min(3, 'Username must be at least 3 characters'),
-  password: yup.string().required('Password is required'),
-});
-
-type LoginFormData = yup.InferType<typeof schema>;
-
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const { login } = useAuthStore();
+  const { setTokens, setUser } = useAuthStore();
+  const [error, setError] = useState('');
+  const { register, handleSubmit } = useForm<AuthRequest>();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: yupResolver(schema),
-  });
-
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: AuthRequest) => {
     try {
-      setError(null);
-      const response = await authService.login(data);
-      await login(response.data.access_token, response.data.refresh_token);
-      navigate('/profile', { replace: true });
-    } catch (err) {
-      setError('Invalid username or password');
+      const { data: tokens } = await authApi.login(data);
+      setTokens(tokens);
+      const { data: user } = await authApi.getCurrentUser();
+      setUser(user);
+      navigate('/profile');
+    } catch (error) {
+      setError('Invalid credentials');
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'vk' | 'yandex') => {
+    try {
+      const { data } = await (provider === 'vk' 
+        ? authApi.getVkLoginUrl() 
+        : authApi.getYandexLoginUrl());
+      window.location.href = data.auth_url;
+    } catch (error) {
+      setError('Failed to initialize social login');
     }
   };
 
   return (
-    <div
-      style={{
-        maxWidth: '400px',
-        margin: '0 auto',
-        padding: '2rem',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06)',
-        textAlign: 'center',
-      }}
-    >
-      <h1
-        style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: '#333',
-          marginBottom: '1.5rem',
-        }}
-      >
-        Sign In
-      </h1>
-      {error && (
-        <div
-          style={{
-            color: '#e74c3c',
-            fontSize: '0.875rem',
-            marginBottom: '1rem',
-          }}
-        >
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleSubmit(onSubmit)} style={{ textAlign: 'left' }}>
-        <div
-          style={{
-            marginBottom: '1rem',
-          }}
-        >
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.9rem',
-              color: '#555',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Username
-          </label>
-          <input
-            {...register('username')}
-            type="text"
-            placeholder="Enter your username"
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              fontSize: '1rem',
-              transition: 'border-color 0.3s ease',
-            }}
-          />
-          {errors.username && (
-            <div
-              style={{
-                color: '#e74c3c',
-                fontSize: '0.875rem',
-                marginTop: '0.25rem',
-              }}
-            >
-              {errors.username.message}
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register('username')}
+                  type="text"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
             </div>
-          )}
-        </div>
-        <div
-          style={{
-            marginBottom: '1rem',
-          }}
-        >
-          <label
-            style={{
-              display: 'block',
-              fontSize: '0.9rem',
-              color: '#555',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Password
-          </label>
-          <input
-            {...register('password')}
-            type="password"
-            placeholder="Enter your password"
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              fontSize: '1rem',
-              transition: 'border-color 0.3s ease',
-            }}
-          />
-          {errors.password && (
-            <div
-              style={{
-                color: '#e74c3c',
-                fontSize: '0.875rem',
-                marginTop: '0.25rem',
-              }}
-            >
-              {errors.password.message}
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register('password')}
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
             </div>
-          )}
+
+            {error && (
+              <div className="text-red-600 text-sm">{error}</div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Sign in
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleSocialLogin('vk')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <VK className="h-5 w-5" />
+                <span className="ml-2">VK</span>
+              </button>
+              <button
+                onClick={() => handleSocialLogin('yandex')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <Mail className="h-5 w-5" />
+                <span className="ml-2">Yandex</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          type="submit"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            transition: 'background 0.3s ease',
-            marginBottom: '1rem',
-          }}
-          disabled={isSubmitting}
-        >
-          Sign In
-        </button>
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.5rem',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-          }}
-        >
-          <Link
-            to="/auth/vk/login"
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              background: '#fff',
-              color: '#007bff',
-              border: '1px solid #007bff',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
-              textDecoration: 'none',
-              textAlign: 'center',
-              transition: 'background 0.3s ease, color 0.3s ease',
-            }}
-          >
-            Sign in with VK
-          </Link>
-          <Link
-            to="/auth/yandex/login"
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              background: '#fff',
-              color: '#007bff',
-              border: '1px solid #007bff',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
-              textDecoration: 'none',
-              textAlign: 'center',
-              transition: 'background 0.3s ease, color 0.3s ease',
-            }}
-          >
-            Sign in with Yandex
-          </Link>
-        </div>
-        <div
-          style={{
-            fontSize: '0.9rem',
-            color: '#555',
-            textAlign: 'center',
-          }}
-        >
-          Don't have an account?{' '}
-          <Link
-            to="/register"
-            style={{
-              color: '#007bff',
-              textDecoration: 'none',
-              transition: 'color 0.3s ease',
-            }}
-          >
-            Sign up
-          </Link>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

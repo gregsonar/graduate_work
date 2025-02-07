@@ -1,81 +1,65 @@
-import { useEffect } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { useAuthStore } from '../store/auth.store';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+import { LogOut, User, CreditCard } from 'lucide-react';
+import { authApi } from '../api/auth';
 
-export function Layout() {
+export default function Layout() {
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, isAuthenticated, logout, getCurrentUser } = useAuthStore();
-
-  useEffect(() => {
-    if (!isAuthenticated && !['/login', '/register'].includes(location.pathname)) {
-      getCurrentUser().catch(() => {
-        navigate('/login');
-      });
-    }
-  }, [isAuthenticated, getCurrentUser, navigate, location]);
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authApi.logout();
+      logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
-  // Не показываем навигацию на страницах входа и регистрации
-  const hideNavigation = ['/login', '/register'].includes(location.pathname);
-
-  if (hideNavigation) {
-    return <Outlet />;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Навигационная панель */}
+    <div className="min-h-screen bg-gray-100">
       <nav className="bg-white shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center space-x-4">
-              <Link to="/profile" className="text-gray-900 font-medium">
-                Profile
-              </Link>
-              {user?.is_superuser && (
-                <Link to="/roles" className="text-gray-900 font-medium">
-                  Roles
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <h1 className="text-xl font-bold text-gray-900">Subscription App</h1>
+              </div>
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <Link
+                  to="/profile"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
                 </Link>
-              )}
+                <Link
+                  to="/subscription"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Subscription
+                </Link>
+              </div>
             </div>
-
-            <div className="flex items-center space-x-4">
-              {user && (
-                <span className="text-gray-600">
-                  Welcome, {user.username}
-                </span>
-              )}
-              <Button onClick={handleLogout} variant="outline">
+            <div className="flex items-center">
+              <span className="text-sm text-gray-700 mr-4">{user?.username}</span>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Основной контент */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <Outlet />
       </main>
-
-      {/* Футер */}
-      <footer className="bg-white border-t mt-auto">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center text-gray-600">
-            © {new Date().getFullYear()} Your Company Name
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

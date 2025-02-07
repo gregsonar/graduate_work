@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,9 @@ from subscriptions.schemas.subscription_schema import (
     DetailResponse
 )
 from subscriptions.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -27,8 +31,22 @@ async def create_subscription(
 ):
     """Create a new subscription for the current user"""
     subscription_service = SubscriptionService(session)
-    data.user_id = UUID(current_user["id"])
-    return await subscription_service.create_subscription(data)
+    try:
+        logger.info(current_user)
+        data.user_id = UUID(str(current_user["id"]))
+        return await subscription_service.create_subscription(data)
+    except KeyError:
+        logger.error(f"User data is missing ID field. User data: {current_user}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid user data structure received from auth service"
+        )
+    except ValueError as e:
+        logger.error(f"Failed to convert user ID to UUID. Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
 
 
 @router.get("/{subscription_id}", response_model=SubscriptionResponse)

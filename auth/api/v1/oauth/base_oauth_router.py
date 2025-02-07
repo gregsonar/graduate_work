@@ -18,7 +18,6 @@ from auth.schemas.oauth.base_schema import (
 from auth.services.oauth.vk_oauth_service import VKOAuthService
 from auth.services.oauth.ya_oauth_service import YandexOAuthService
 
-
 class OAuthRouter:
     """Base router for OAuth providers"""
 
@@ -122,18 +121,14 @@ class OAuthRouter:
                     detail=f"Authentication failed: {str(e)}"
                 )
 
-        @self.router.get(
-            "/accounts",
-            response_model=SocialAccountList,
-            dependencies=[Depends(validate_roles)]
-        )
+        @self.router.get("/accounts", response_model=SocialAccountList)
         async def get_accounts(
-                current_user: Dict[str, Any] = Depends(validate_roles),
-                auth_service: AuthService = Depends(self.get_auth_service)
+                current_user = Depends(validate_roles()),
+                oauth_service: BaseOAuthService = Depends(self.get_oauth_service)
         ) -> SocialAccountList:
             try:
-                provider = await self.oauth_service_class.get_provider()
-                accounts = await auth_service.social_repository.get_user_accounts(
+                provider = await oauth_service.get_provider()
+                accounts = await oauth_service.auth_service.social_repository.get_user_accounts(
                     user_id=current_user['id'],
                     provider=provider
                 )
@@ -146,18 +141,16 @@ class OAuthRouter:
 
         @self.router.delete(
             "/unlink/{social_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
-            dependencies=[Depends(validate_roles)]
+            status_code=status.HTTP_204_NO_CONTENT
         )
         async def unlink_account(
                 social_id: str,
-                current_user: Dict[str, Any] = Depends(validate_roles),
-                oauth_service: BaseOAuthService = Depends(self.get_oauth_service),
-                auth_service: AuthService = Depends(self.get_auth_service)
+                current_user = Depends(validate_roles()),
+                oauth_service: BaseOAuthService = Depends(self.get_oauth_service)
         ):
             try:
                 provider = await oauth_service.get_provider()
-                social_account = await auth_service.social_repository.get_by_provider_and_social_id(
+                social_account = await oauth_service.auth_service.social_repository.get_by_provider_and_social_id(
                     provider,
                     social_id
                 )
@@ -171,7 +164,7 @@ class OAuthRouter:
                 if social_account.access_token:
                     await oauth_service.revoke_access(social_account.access_token)
 
-                await auth_service.unlink_social_account(
+                await oauth_service.auth_service.unlink_social_account(
                     user_id=current_user['id'],
                     provider=provider,
                     social_id=social_id
@@ -188,12 +181,11 @@ class OAuthRouter:
 
         @self.router.post(
             "/refresh/{social_id}",
-            response_model=SocialAccountResponse,
-            dependencies=[Depends(validate_roles)]
+            response_model=SocialAccountResponse
         )
         async def refresh_token(
                 social_id: str,
-                current_user: Dict[str, Any] = Depends(validate_roles),
+                current_user = Depends(validate_roles()),
                 oauth_service: BaseOAuthService = Depends(self.get_oauth_service)
         ) -> SocialAccountResponse:
             try:

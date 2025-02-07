@@ -13,7 +13,7 @@ class YooKassaPaymentSchema(BaseModel, extra='allow'):
     amount: AmountSchema
     description: Optional[str] = Field(None, description="Описание платежа")
     metadata: dict
-    confirmation: dict
+    confirmation: Optional[dict] = None
 
 
 class YooKassaRefundSchema(BaseModel):

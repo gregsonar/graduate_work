@@ -81,7 +81,7 @@ class YooKassaProvider:
             payment_data = json.loads(payment.json())
             return YooKassaPaymentSchema(**payment_data).model_dump()
 
-        except Exception as e:
+        except PaymentCaptureError as e:
             raise PaymentCaptureError(f"Payment capture failed: {str(e)}")
 
     def handle_webhook(self, event: str, data: Dict) -> None:

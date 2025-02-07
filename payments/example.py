@@ -3,11 +3,15 @@ from pprint import pprint
 from providers.yookassa_provider import YooKassaProvider
 from exceptions import PaymentCreationError, PaymentCaptureError
 from urllib3.exceptions import MaxRetryError, TimeoutError
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Инициализация провайдера с тестовыми данными
 provider = YooKassaProvider(
-    account_id="<SHOP_ID>",
-    secret_key="<API_KEY>"
+    account_id=os.getenv("YOOKASSA_SHOP_ID", "1234567"),
+    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123")
 )
 
 
@@ -33,9 +37,10 @@ def simulate_webhook(payment_id: str, event: str):
 
 def demo_successful_payment():
     print("=== ТЕСТ 1: УСПЕШНЫЙ ПЛАТЕЖ ===")
-
+    current_status = None
     try:
         # Создаем платеж с тестовой картой 5555 5555 5555 4444
+        idempotence_key = uuid.uuid4()
         payment = provider.create_payment(
             amount=100.00,
             description="Успешный тестовый платеж",
@@ -43,19 +48,35 @@ def demo_successful_payment():
                 "card": "5555555555554444",
                 "order_id": "123"
             },
-            idempotence_key=uuid.uuid4()
+            idempotence_key=idempotence_key
         )
 
         print("Создан платеж:")
         pprint(payment)
+        current_status = payment['status']
 
         # Имитируем успешный вебхук
-        simulate_webhook(payment['id'], "payment.succeeded")
+        # simulate_webhook(payment['id'], "payment.succeeded")
 
         # Проверяем статус
         print("\nПроверяем статус платежа:")
         payment = provider.get_payment(payment['id'])
         pprint(payment)
+        current_status = payment['status']
+
+        input('Платёж произведён?')
+        payment = provider.get_payment(payment['id'])
+        current_status = payment['status']
+        if current_status == 'waiting_for_capture':
+
+            print("\nПроизводим принятие платежа:")
+            capture = provider.capture_payment(payment['id'])
+            pprint(capture)
+            current_status = capture['status']
+        if current_status == 'succeeded':
+            print("Платёж успешно проведён")
+        else:
+            raise PaymentCaptureError('Ошибка создания платежа')
 
     except PaymentCreationError as e:
         print(f"Ошибка: {e}")
@@ -76,15 +97,15 @@ def demo_pending_capture():
                 "card": "2200000000000004",
                 "order_id": "456"
             },
-            capture=False,  # Не подтверждаем автоматически https://yookassa.ru/developers/api#create_payment_capture
+            capture=True,  # Не подтверждаем автоматически https://yookassa.ru/developers/api#create_payment_capture
             idempotence_key=uuid.uuid4()
         )
 
-        print("Создан платеж в статусе 'pending':")
+        print("Создан платеж:")
         pprint(payment)
 
         # Имитируем вебхук ожидания подтверждения
-        simulate_webhook(payment['id'], "payment.waiting_for_capture")
+        # simulate_webhook(payment['id'], "payment.waiting_for_capture")
 
         # Подтверждаем платеж вручную
         print("\nПодтверждаем платеж:")
@@ -147,12 +168,12 @@ def demo_idempotency():
 
 if __name__ == "__main__":
     demo_successful_payment()
-    print_separator()
+    # print_separator()
 
-    demo_pending_capture()
-    print_separator()
+    # demo_pending_capture()
+    # print_separator()
 
-    demo_failed_payment()
-    print_separator()
+    # demo_failed_payment()
+    # print_separator()
 
-    demo_idempotency()
+    # demo_idempotency()

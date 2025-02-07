@@ -1,12 +1,14 @@
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (AsyncSession, create_async_engine,
                                     async_sessionmaker)
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.asyncio.session import Session
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-from auth.core.config import config
+from billing.src.core.config import settings
 
 Base = declarative_base()
 
-engine = create_async_engine(config.db_url, echo=True, future=True)
+engine = create_async_engine(settings.dsn, echo=True, future=True)
 
 async_session = async_sessionmaker(
     engine,
@@ -23,3 +25,14 @@ async def get_session() -> AsyncSession:
             raise
         finally:
             await session.close()
+
+
+def get_sync_session() -> Session:
+    sync_engine = create_engine(settings.dsn_sync, future=True)
+    sync_session = sessionmaker(
+        bind=sync_engine,
+        class_=Session,
+        expire_on_commit=False,
+    )
+    with sync_session() as session:
+        return session

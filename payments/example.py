@@ -44,39 +44,41 @@ def demo_successful_payment():
         payment = provider.create_payment(
             amount=100.00,
             description="Успешный тестовый платеж",
-            metadata={
-                "card": "5555555555554444",
+            metadata={ # https://yookassa.ru/developers/api#create_payment_metadata
+                "some_key": "some_value",
                 "order_id": "123"
             },
             idempotence_key=idempotence_key
         )
 
-        print("Создан платеж:")
-        pprint(payment)
         current_status = payment['status']
+        if current_status == 'pending':
+            print("Создан платеж:")
+            pprint(payment)
 
         # Имитируем успешный вебхук
         # simulate_webhook(payment['id'], "payment.succeeded")
 
-        # Проверяем статус
-        print("\nПроверяем статус платежа:")
-        payment = provider.get_payment(payment['id'])
-        pprint(payment)
-        current_status = payment['status']
+        # # Проверяем статус
+        # print("\nПроверяем статус платежа:")
+        # payment = provider.get_payment(payment['id'])
+        # current_status = payment['status']
 
-        input('Платёж произведён?')
-        payment = provider.get_payment(payment['id'])
-        current_status = payment['status']
-        if current_status == 'waiting_for_capture':
-
-            print("\nПроизводим принятие платежа:")
-            capture = provider.capture_payment(payment['id'])
-            pprint(capture)
-            current_status = capture['status']
-        if current_status == 'succeeded':
-            print("Платёж успешно проведён")
-        else:
-            raise PaymentCaptureError('Ошибка создания платежа')
+        while True:
+            input('Платёж произведён?')
+            payment = provider.get_payment(payment['id'])
+            current_status = payment['status']
+            print(f"Статус платежа: {current_status}")
+            if current_status == 'waiting_for_capture':
+                print("\nПроизводим принятие платежа:")
+                capture = provider.capture_payment(payment['id'])
+                pprint(capture)
+                current_status = capture['status']
+                if current_status == 'succeeded':
+                    print("Платёж успешно проведён")
+                    break
+                else:
+                    raise PaymentCaptureError('Ошибка принятия платежа')
 
     except PaymentCreationError as e:
         print(f"Ошибка: {e}")

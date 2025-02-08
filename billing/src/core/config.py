@@ -26,14 +26,9 @@ class Setting(BaseSettings):
     webhook_api_url: str
     payment_redirect_url: str
 
-    AUTH_API_SUBSCRIBE_URL: str = ""
-    AUTH_API_UNSUBSCRIBE_URL: str = ""
-    #
-    # header_key: str = "x-api-key"
-    # header_value: str = "11111"
-    #
-    # auto_pay_delay: int = 60
-    # check_delay_in_seconds: int = 60
+    SUBSCRIPTIONS_URL: str = 'http://auth_api:8000/api/v1/subscription'
+
+    check_delay_in_seconds: int = 60
 
 
 settings = Setting()

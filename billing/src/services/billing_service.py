@@ -1,3 +1,4 @@
+from typing import Dict
 from uuid import UUID
 
 from fastapi import Depends
@@ -30,34 +31,33 @@ class BillingService:
             self,
             user_id: UUID,
             tariff: TariffModel,
-            payment: YooKassaProvider.create_payment,
+            payment: Dict[str, str],
     )  -> PaymentModel:
         """Метод для сохранения платежа в базе."""
         new_db_payment = PaymentModel(
             user_id=user_id,
             tariff_id=tariff.id,
-            status=payment.status,
-            payment_method_id=payment.payment_method.id,
-            payment_id=payment.id,
+            status=payment.get('status'),
+            payment_id=payment.get('id'),
         )
         self.db_session.add(new_db_payment)
         await self.db_session.commit()
         return new_db_payment
 
-    async def save_refund_in_bd(
-            self,
-            refund: YooKassaProvider.create_refund,
-    ) -> None:
-        """Метод для сохранения возврата в базе."""
-        # В нашем модуле юкассы метод отсутствует.
-        refund_db = RefundModel(
-            payment_id=refund.payment_id,
-            refund_id=refund.id,
-            status=refund.status,
-            amount=refund.amount.value
-        )
-        self.db_session.add(refund_db)
-        await self.db_session.commit()
+    # async def save_refund_in_bd(
+    #         self,
+    #         refund: YooKassaProvider.create_refund,
+    # ) -> None:
+    #     """Метод для сохранения возврата в базе."""
+    #     # В нашем модуле юкассы метод отсутствует.
+    #     refund_db = RefundModel(
+    #         payment_id=refund.payment_id,
+    #         refund_id=refund.id,
+    #         status=refund.status,
+    #         amount=refund.amount.value
+    #     )
+    #     self.db_session.add(refund_db)
+    #     await self.db_session.commit()
 
     async def get_all_payments(self, user_id) -> list[PaymentSchema]:
         """Метод для получения из БД всех платежей пользователя."""
@@ -78,9 +78,6 @@ class BillingService:
 
     async def create_payment(self, user_id: UUID, tariff_id: UUID) -> str:
 
-        # if await self.is_subscribed(user_id):
-        #     raise AlreadySubscribedError
-
         tariff = await self.db_session.get(TariffModel, tariff_id)
         if not tariff:
             raise TariffNotFoundError
@@ -90,43 +87,13 @@ class BillingService:
             currency=tariff.currency,
             description=tariff.description,
         )
-        payment_db = await self.save_payment_in_db(user_id, tariff, payment)
-        subscribe.delay(payment_db.id, payment.id, payment.status)
+
+        payment_db = await self.save_payment_in_db(user_id, tariff.id, payment)
+        subscribe.delay(payment_db.id, payment.get('id'), payment.get('status'))
 
         return CreatedPaymentSchema(
-            redirect_url=payment.confirmation.return_url
+            redirect_url=payment.get('confirmation').get('confirmation_url')
         )
-
-
-
-#     async def is_subscribed(self, user_id) -> bool:
-#         # Не нашел возможности проверить наличие подписки по шв пользователя
-#         # if subscription:
-#         #     return True
-#         # return False
-#
-
-#     async def unsubscribe(self, user_id: UUID, return_funds: bool) -> None:
-#         # Переписать с учетом сервиса подписок и модуля платежей
-#         subscription = await self.get_user_subscription(user_id)
-#
-#         if return_funds:
-#             tariff = await self.session.get(TariffModel, subscription.tariff_id)
-#             payment_db = await self.session.get(PaymentModel, subscription.payment_id)
-#             payload = self.get_refund_payload(payment_db.payment_id, tariff.price, tariff.currency)
-#
-#             refund = Refund.create(payload)
-#             await self.save_refund(refund)
-#
-#             if refund.status != self.SUCCEEDED:
-#                 raise RefundError
-#
-#         subscription.status = str(SubscriptionStatus.CANCELED)
-#         await self.session.commit()
-#         await auth_async_unsubscribe(user_id=user_id)
-#
-
-
 
 def get_billing_service(
         session: AsyncSession = Depends(get_session)

@@ -19,13 +19,13 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
         nullable=False,
     )
     status = Column(String)
-    payment_method_id = Column(UUID, nullable=False)
     payment_id = Column(UUID, nullable=False)
 
 class PaymentStatus(Enum):
     SUCCEEDED = 'succeeded'
     PENDING = 'pending'
     CANCELED = 'canceled'
+    WAITING_FOR_CAPTURE = 'waiting_for_capture'
 
     def __repr__(self):
         return self.value

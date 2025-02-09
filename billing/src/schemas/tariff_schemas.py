@@ -9,3 +9,10 @@ class TariffSchema(BaseModel):
     name: str
     description: str
     price: int
+
+
+class PaymentSchema(BaseModel):
+    id: UUID
+    user_id: UUID
+    tariff_id: UUID
+    status: str

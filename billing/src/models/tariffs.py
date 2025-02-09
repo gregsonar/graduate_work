@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Text, Integer, Boolean, Numeric
 
-from db.postgres import Base
-from models.mixins import TimeStampedMixin, UUIDMixin
+from billing.src.db.postgres import Base
+from billing.src.models.mixins import TimeStampedMixin, UUIDMixin
 
 
 class TariffModel(Base, UUIDMixin, TimeStampedMixin):

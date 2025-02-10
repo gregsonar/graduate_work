@@ -4,7 +4,7 @@ services:
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data/
     env_file:
-      - ./.env
+      - .env.sample
 
   notification-api-test:
       build:
@@ -13,7 +13,7 @@ services:
       volumes:
         - ./notification_api_flask/tests:/usr/src/app/
       env_file:
-        - ./.env
+        - .env.sample
       depends_on:
         - notification-api-flask
       networks:
@@ -29,7 +29,7 @@ services:
       ports:
         - "8080:4000"
       env_file:
-        - ./.env
+        - .env.sample
       networks:
         - backend
 
@@ -37,7 +37,7 @@ services:
     image: rabbitmq:3.7-management
     restart: always
     env_file:
-      - ./.env
+      - .env.sample
 
   notification_consumer_welcome:
     build:
@@ -47,7 +47,7 @@ services:
     volumes:
       - ./notification_consumer_welcome:/usr/src/app/
     env_file:
-      - ./.env
+      - .env.sample
 
   notification_consumer_to_all:
       build:
@@ -57,7 +57,7 @@ services:
       volumes:
         - ./notification_consumer_to_all:/usr/src/app/
       env_file:
-        - ./.env
+        - .env.sample
 
   notification_consumer_instant_email_messages:
       build:
@@ -67,7 +67,7 @@ services:
       volumes:
         - ./notification_consumer_instant_email_messages:/usr/src/app/
       env_file:
-        - ./.env
+        - .env.sample
 
   notification_consumer_sheduler:
       build:
@@ -77,7 +77,7 @@ services:
       volumes:
         - ./notification_consumer_sheduler:/usr/src/app/
       env_file:
-        - ./.env
+        - .env.sample
 
   notification_db:
     image: postgres:16.0
@@ -85,7 +85,7 @@ services:
       - notification_postgres_data:/var/lib/postgresql/data/
       - ./docker/development/notification_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
-      - ./.env
+      - .env.sample
 
   notification_websockets:
       build:
@@ -95,7 +95,7 @@ services:
       volumes:
         - ./notification_websocket_server:/usr/src/app/
       env_file:
-        - ./.env
+        - .env.sample
       networks:
         - backend
 
@@ -108,7 +108,7 @@ services:
       volumes:
         - ./notification_scheduler:/usr/src/notification_scheduler/
       env_file:
-        - ./.env
+        - .env.sample
 
   notification_scheduler_celery_messages:
       build:
@@ -118,7 +118,7 @@ services:
       volumes:
         - ./notification_scheduler:/usr/src/notification_scheduler/
       env_file:
-        - ./.env
+        - .env.sample
 
   mailer:
       image: mailhog/mailhog

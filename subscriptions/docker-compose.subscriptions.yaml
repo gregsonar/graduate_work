@@ -1,0 +1,56 @@
+services:
+  postgres_subscriptions:
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile.postgres
+    env_file: ./.env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${SUB_POSTGRES_USER} -d ${SUB_POSTGRES_DB}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    networks:
+      - subscription_network
+    volumes:
+      - subscription_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+  subscriptions_migrations:
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile.migrations
+    env_file: ./.env
+    depends_on:
+      postgres_subscriptions:
+        condition: service_healthy
+    networks:
+      - subscription_network
+
+  subscriptions_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - DEBUG=${DEBUG}
+    depends_on:
+      postgres_subscriptions:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://subscriptions_api:8000/api/openapi.json" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - subscription_network
+      - backend
+    restart: unless-stopped
+#    ports:
+#      - "8000:8000"
+
+
+volumes:
+  subscription_postgres_data:

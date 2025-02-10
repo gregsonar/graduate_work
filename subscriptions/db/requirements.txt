@@ -1,0 +1,4 @@
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic~=1.13.3
+pydantic_settings==2.6.1

@@ -8,7 +8,7 @@ services:
 
   notification-api-test:
       build:
-        context: ./notification_api_flask/tests
+        context: notification_api_flask/tests
         dockerfile: ../../docker/development/notification_api_flask/Dockerfile_tests
       volumes:
         - ./notification_api_flask/tests:/usr/src/app/
@@ -22,7 +22,7 @@ services:
 
   notification-api-flask:
       build:
-        context: ./notification_api_flask
+        context: notification_api_flask
         dockerfile: ../docker/development/notification_api_flask/Dockerfile
       volumes:
         - ./notification_api_flask:/usr/src/app/
@@ -120,11 +120,11 @@ services:
       env_file:
         - ./.env
 
-  mailer:
-      image: mailhog/mailhog
-      restart: always
-      networks:
-        - backend
+  # mailer:
+  #     image: mailhog/mailhog
+  #     restart: always
+  #     networks:
+  #       - backend
 
 
 volumes:

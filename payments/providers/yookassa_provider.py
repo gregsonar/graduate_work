@@ -38,7 +38,7 @@ class YooKassaProvider:
                 },
                 "confirmation": {
                     "type": "redirect",
-                    "return_url": "https://your-service.com/return"
+                    "return_url": "https://your-service.com/return"  # todo: добавить в .env
                 },
                 "capture": capture,
                 "description": description,
@@ -62,6 +62,18 @@ class YooKassaProvider:
 
         except Exception as e:
             raise PaymentStatusError(f"Failed to get payment status: {str(e)}")
+
+    def cancel_payment(self,
+            payment_id: str,
+            idempotence_key: Optional[UUID] = None):
+        try:
+            payment_to_cancel = Payment.cancel(payment_id=payment_id,
+                                               idempotency_key=idempotence_key)
+
+            return payment_to_cancel
+        except Exception as e:
+            raise e
+
 
     def capture_payment(
             self,

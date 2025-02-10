@@ -18,3 +18,6 @@ class WebhookValidationError(PaymentError):
 
 class PaymentStatusError(PaymentError):
     """Ошибка при получении статуса платежа"""
+
+class PaymentCancelError(PaymentError):
+    """Ошибка при получении статуса платежа"""

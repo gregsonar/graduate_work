@@ -5,6 +5,9 @@ services:
       - notification_postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env.sample
+    networks:
+      - backend
+      - notifications_network
 
   notification-api-test:
       build:
@@ -18,6 +21,7 @@ services:
         - notification-api-flask
       networks:
         - backend
+        - notifications_network
 
 
   notification-api-flask:
@@ -32,12 +36,16 @@ services:
         - .env.sample
       networks:
         - backend
+        - notifications_network
 
   notification-rabbitmq:
     image: rabbitmq:3.7-management
     restart: always
     env_file:
       - .env.sample
+    networks:
+      - backend
+      - notifications_network
 
   notification_consumer_welcome:
     build:
@@ -48,6 +56,9 @@ services:
       - ./notification_consumer_welcome:/usr/src/app/
     env_file:
       - .env.sample
+    networks:
+      - backend
+      - notifications_network
 
   notification_consumer_to_all:
       build:
@@ -58,6 +69,9 @@ services:
         - ./notification_consumer_to_all:/usr/src/app/
       env_file:
         - .env.sample
+      networks:
+        - backend
+        - notifications_network
 
   notification_consumer_instant_email_messages:
       build:
@@ -68,6 +82,9 @@ services:
         - ./notification_consumer_instant_email_messages:/usr/src/app/
       env_file:
         - .env.sample
+      networks:
+        - backend
+        - notifications_network
 
   notification_consumer_sheduler:
       build:
@@ -78,6 +95,9 @@ services:
         - ./notification_consumer_sheduler:/usr/src/app/
       env_file:
         - .env.sample
+      networks:
+        - backend
+        - notifications_network
 
   notification_db:
     image: postgres:16.0
@@ -86,6 +106,9 @@ services:
       - ./docker/development/notification_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env.sample
+    networks:
+      - backend
+      - notifications_network
 
   notification_websockets:
       build:
@@ -98,6 +121,7 @@ services:
         - .env.sample
       networks:
         - backend
+        - notifications_network
 
 
   notification_scheduler_celery_beat:
@@ -109,6 +133,9 @@ services:
         - ./notification_scheduler:/usr/src/notification_scheduler/
       env_file:
         - .env.sample
+      networks:
+        - backend
+        - notifications_network
 
   notification_scheduler_celery_messages:
       build:
@@ -119,13 +146,19 @@ services:
         - ./notification_scheduler:/usr/src/notification_scheduler/
       env_file:
         - .env.sample
+      networks:
+        - backend
+        - notifications_network
 
   # mailer:
   #     image: mailhog/mailhog
   #     restart: always
   #     networks:
   #       - backend
-
+networks:
+  notifications_network:
+    driver: bridge
+    name: notifications_network
 
 volumes:
   notification_postgres_data:

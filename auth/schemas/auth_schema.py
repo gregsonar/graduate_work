@@ -26,23 +26,18 @@ class AuthRequest(BaseResponse):
             }
         }
 
-class TokenResponse(BaseResponse):
-    """Token response schema for authentication and refresh operations"""
-    access_token: str = Field(
-        ...,
-        description="JWT access token for API authorization"
-    )
-    refresh_token: str = Field(
-        ...,
-        description="JWT refresh token for obtaining new access tokens"
-    )
+class TokenResponse(BaseModel):
+    """Token response schema"""
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    token_type: Optional[str] = Field(default="bearer", description="Token type")
 
     class Config:
-        from_attributes = True
         json_schema_extra = {
             "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                "access_token": "eyJhbGciOiJIUzI1NiIs...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+                "token_type": "bearer"
             }
         }
 

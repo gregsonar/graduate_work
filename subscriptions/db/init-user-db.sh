@@ -1,0 +1,13 @@
+set -e
+
+# Создаем пользователя и БД
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    CREATE DATABASE $SUB_POSTGRES_DB;
+EOSQL
+
+# Подключаемся к созданной БД и выдаем права
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$SUB_POSTGRES_DB" <<-EOSQL
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $SUB_POSTGRES_USER;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $SUB_POSTGRES_USER;
+    GRANT ALL PRIVILEGES ON SCHEMA public TO $SUB_POSTGRES_USER;
+EOSQL

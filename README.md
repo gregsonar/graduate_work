@@ -8,6 +8,17 @@
 docker compose -f docker-compose.main.yaml up --build
 ```
 
+### Swagger адреса: 
+
+Подписки:
+```url
+http://localhost/api/subscriptions/api/openapi
+```
+Auth: 
+```
+http://localhost/api/openapi
+```
+
 ### Запуск фронтенда
 
 Из директории `front` выполнить команду:

@@ -1,253 +1,150 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuthStore } from '../store/auth.store';
-import { authService } from '../api/services';
+import { useNavigate, Link } from 'react-router-dom';
+import { AArrowDown as VK, Mail } from 'lucide-react';
+import { authApi } from '../api/auth';
+import { useAuthStore } from '../store/authStore';
+import type { AuthRequest } from '../types/auth';
 
-const schema = yup.object().shape({
-  username: yup.string()
-    .required('Username is required')
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must be less than 50 characters'),
-  email: yup.string().email('Must be a valid email'),
-  password: yup.string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters'),
-  confirmPassword: yup.string()
-    .oneOf([yup.ref('password')], 'Passwords must match')
-    .required('Please confirm your password'),
-});
-
-type RegisterFormData = yup.InferType<typeof schema>;
-
-export function RegisterPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const { login } = useAuthStore();
+  const { setTokens, setUser } = useAuthStore();
+  const [error, setError] = useState('');
+  const { register, handleSubmit, watch } = useForm<AuthRequest & { confirmPassword: string }>();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
-    resolver: yupResolver(schema),
-  });
+  const onSubmit = async (data: AuthRequest & { confirmPassword: string }) => {
+    if (data.password !== data.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
 
-  const onSubmit = async (data: RegisterFormData) => {
     try {
-      setError(null);
-      const { confirmPassword, ...registerData } = data;
-      const response = await authService.register(registerData);
-      await login(response.data.access_token, response.data.refresh_token);
-      navigate('/profile', { replace: true });
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to register');
+      const { data: tokens } = await authApi.register({
+        username: data.username,
+        password: data.password
+      });
+      setTokens(tokens);
+      const { data: user } = await authApi.getCurrentUser();
+      setUser(user);
+      navigate('/profile');
+    } catch (error) {
+      setError('Registration failed. Username might be taken.');
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'vk' | 'yandex') => {
+    try {
+      const { data } = await (provider === 'vk' 
+        ? authApi.getVkLoginUrl() 
+        : authApi.getYandexLoginUrl());
+      window.location.href = data.auth_url;
+    } catch (error) {
+      setError('Failed to initialize social login');
     }
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        background: '#f0f2f5',
-        paddingTop: '4rem',
-        paddingBottom: '2rem',
-        paddingInline: '1rem',
-      }}
-    >
-      <Card
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          padding: '2rem',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          background: '#ffffff',
-        }}
-      >
-        <CardHeader>
-          <CardTitle
-            style={{
-              fontSize: '1.75rem',
-              fontWeight: 'bold',
-              color: '#333',
-              textAlign: 'center',
-              marginBottom: '1rem',
-            }}
-          >
-            Create your account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert
-              style={{
-                padding: '0.75rem',
-                borderRadius: '8px',
-                background: '#ffebee',
-                color: '#c62828',
-                border: '1px solid #ffcdd2',
-                marginBottom: '1rem',
-              }}
-            >
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Create your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{' '}
+          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            sign in to your account
+          </Link>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <Input
-                {...register('username')}
-                type="text"
-                placeholder="Username"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: errors.username ? '1px solid #e74c3c' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease',
-                }}
-              />
-              {errors.username && (
-                <p
-                  style={{
-                    marginTop: '0.25rem',
-                    fontSize: '0.875rem',
-                    color: '#e74c3c',
-                  }}
-                >
-                  {errors.username.message}
-                </p>
-              )}
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register('username')}
+                  type="text"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
             </div>
+
             <div>
-              <Input
-                {...register('email')}
-                type="email"
-                placeholder="Email (optional)"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: errors.email ? '1px solid #e74c3c' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease',
-                }}
-              />
-              {errors.email && (
-                <p
-                  style={{
-                    marginTop: '0.25rem',
-                    fontSize: '0.875rem',
-                    color: '#e74c3c',
-                  }}
-                >
-                  {errors.email.message}
-                </p>
-              )}
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register('password')}
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
             </div>
+
             <div>
-              <Input
-                {...register('password')}
-                type="password"
-                placeholder="Password"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: errors.password ? '1px solid #e74c3c' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease',
-                }}
-              />
-              {errors.password && (
-                <p
-                  style={{
-                    marginTop: '0.25rem',
-                    fontSize: '0.875rem',
-                    color: '#e74c3c',
-                  }}
-                >
-                  {errors.password.message}
-                </p>
-              )}
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register('confirmPassword')}
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
             </div>
+
+            {error && (
+              <div className="text-red-600 text-sm">{error}</div>
+            )}
+
             <div>
-              <Input
-                {...register('confirmPassword')}
-                type="password"
-                placeholder="Confirm password"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: errors.confirmPassword ? '1px solid #e74c3c' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease',
-                }}
-              />
-              {errors.confirmPassword && (
-                <p
-                  style={{
-                    marginTop: '0.25rem',
-                    fontSize: '0.875rem',
-                    color: '#e74c3c',
-                  }}
-                >
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <Button
+              <button
                 type="submit"
-                disabled={isSubmitting}
-                style={{
-                  padding: '0.75rem',
-                  background: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  transition: 'background 0.3s ease',
-                }}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {isSubmitting ? 'Creating account...' : 'Create account'}
-              </Button>
-              <p
-                style={{
-                  fontSize: '0.9rem',
-                  color: '#555',
-                  textAlign: 'center',
-                }}
-              >
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  style={{
-                    color: '#007bff',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    transition: 'color 0.3s ease',
-                  }}
-                >
-                  Sign in here
-                </Link>
-              </p>
+                Register
+              </button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleSocialLogin('vk')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <VK className="h-5 w-5" />
+                <span className="ml-2">VK</span>
+              </button>
+              <button
+                onClick={() => handleSocialLogin('yandex')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
+                <Mail className="h-5 w-5" />
+                <span className="ml-2">Yandex</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

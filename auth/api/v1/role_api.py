@@ -7,7 +7,6 @@ from auth.schemas.role_schema import RoleListResponse, RoleResponse, UpdateRoleR
     CreateRoleResponse
 from auth.services.role_service import RoleService, logger
 
-
 router = APIRouter(
     responses={
         status.HTTP_400_BAD_REQUEST: {"description": "Bad Request"},
@@ -19,8 +18,8 @@ router = APIRouter(
 
 
 @router.get("/", response_model=RoleListResponse)
-@validate_roles(['admin'])
 async def get_roles(
+        current_user=Depends(validate_roles(['admin'])),
         page: int = Query(1, ge=1, description="Номер страницы"),
         size: int = Query(10, ge=1, le=100, description="Количество элементов на странице"),
         role_service: RoleService = Depends()
@@ -36,15 +35,16 @@ async def get_roles(
             size=size
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Failed to retrieve roles: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve roles: {str(e)}"
         )
 
+
 @router.get("/{role_id}", response_model=RoleResponse)
-@validate_roles(['admin'])
 async def get_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли"),
         role_service: RoleService = Depends()
 ) -> RoleResponse:
@@ -56,8 +56,8 @@ async def get_role(
                 detail=f"Role with ID {role_id} not found"
             )
         return RoleResponse.model_validate(role)
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -65,9 +65,9 @@ async def get_role(
         )
 
 
-@router.put("/{role_id}",response_model=RoleResponse)
-@validate_roles(['admin'])
+@router.put("/{role_id}", response_model=RoleResponse)
 async def update_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли для обновления"),
         role_update: UpdateRoleRequest = Body(..., description="Данные для обновления роли"),
         role_service: RoleService = Depends()
@@ -95,8 +95,8 @@ async def update_role(
         updated_role = await role_service.update(existing_role.id, update_data)
 
         return RoleResponse.model_validate(updated_role)
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -106,17 +106,14 @@ async def update_role(
 
 @router.delete(
     "/{role_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        status.HTTP_204_NO_CONTENT: {
-            "description": "Роль успешно удалена"
-        },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "Роль не найдена"
-        }
+        status.HTTP_204_NO_CONTENT: {"description": "Роль успешно удалена"},
+        status.HTTP_404_NOT_FOUND: {"description": "Роль не найдена"}
     }
 )
-@validate_roles(['admin'])
 async def delete_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли для удаления"),
         role_service: RoleService = Depends()
 ):
@@ -134,8 +131,8 @@ async def delete_role(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete role"
             )
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -147,26 +144,10 @@ async def delete_role(
     "/{role_id}/users",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Назначить роль пользователям",
-    description="Назначает роль списку пользователей по их идентификаторам.",
-    responses={
-        status.HTTP_204_NO_CONTENT: {
-            "description": "Роль успешно назначена всем указанным пользователям"
-        },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "Роль не найдена"
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Ошибка при назначении роли пользователю",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Failed to assign role to user 987fcdeb-51a2-43d7-9012-345678901234"}
-                }
-            }
-        }
-    }
+    description="Назначает роль списку пользователей по их идентификаторам."
 )
-@validate_roles(['admin'])
 async def assign_users_to_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли"),
         assignment: UserRoleAssignment = Body(..., description="Список UUID пользователей"),
         role_service: RoleService = Depends()
@@ -186,8 +167,8 @@ async def assign_users_to_role(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Failed to assign role to user {user_id}"
                 )
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -199,26 +180,10 @@ async def assign_users_to_role(
     "/{role_id}/users",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить роль у пользователей",
-    description="Удаляет роль у списка пользователей по их идентификаторам.",
-    responses={
-        status.HTTP_204_NO_CONTENT: {
-            "description": "Роль успешно удалена у всех указанных пользователей"
-        },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "Роль не найдена"
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Ошибка при удалении роли у пользователя",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Failed to remove role from user 987fcdeb-51a2-43d7-9012-345678901234"}
-                }
-            }
-        }
-    }
+    description="Удаляет роль у списка пользователей по их идентификаторам."
 )
-@validate_roles(['admin'])
 async def remove_users_from_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли"),
         assignment: UserRoleAssignment = Body(..., description="Список UUID пользователей"),
         role_service: RoleService = Depends()
@@ -238,38 +203,27 @@ async def remove_users_from_role(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Failed to remove role from user {user_id}"
                 )
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to remove users from role: {str(e)}"
         )
 
+
 @router.post(
     "/",
-    status_code=status.HTTP_200_OK,
+    response_model=CreateRoleResponse,
     summary="Создать роль",
-    description="Создает новую роль",
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Роль успешно создана"
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Ошибка при создании роли"
-        },
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {
-            "description": "Ошибка при создании роли"
-        }
-    }
+    description="Создает новую роль"
 )
-@validate_roles(['admin'])
 async def create_role(
+        current_user=Depends(validate_roles(['admin'])),
         role: UpdateRoleRequest = Body(..., description="Данные для создания роли"),
         role_service: RoleService = Depends()
 ):
     try:
-
         name_exists = await role_service.get_by_name(role.name)
         if name_exists:
             raise HTTPException(
@@ -280,20 +234,21 @@ async def create_role(
         role_data = role.model_dump()
         role = await role_service.create(role_data)
         return CreateRoleResponse.model_validate(role)
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create role: {str(e)}"
         )
 
+
 @router.get(
     "/{role_id}/users",
     response_model=UserRoleAssignment
 )
-@validate_roles(['admin'])
 async def get_users_by_role(
+        current_user=Depends(validate_roles(['admin'])),
         role_id: uuid.UUID = Path(..., description="UUID роли"),
         role_service: RoleService = Depends()
 ):
@@ -307,21 +262,21 @@ async def get_users_by_role(
 
         users = await role_service.get_users_by_role(role_id)
         return [user["id"] for user in users]
-    except HTTPException as he:
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve users for role: {str(e)}"
         )
 
+
 @router.get(
     "/me/roles",
-    response_model=RoleListResponse,
+    response_model=RoleListResponse
 )
-@validate_roles
 async def get_current_user_roles(
-        current_user: dict = validate_roles(),
+        current_user=Depends(validate_roles()),
         role_service: RoleService = Depends()
 ):
     try:
@@ -336,12 +291,12 @@ async def get_current_user_roles(
 
 @router.get(
     "/users/{user_id}/roles",
-    response_model=RoleListResponse,
+    response_model=RoleListResponse
 )
-@validate_roles(['admin'])
 async def get_user_roles(
-    user_id: uuid.UUID = Path(..., description="UUID пользователя"),
-    role_service: RoleService = Depends()
+        current_user=Depends(validate_roles(['admin'])),
+        user_id: uuid.UUID = Path(..., description="UUID пользователя"),
+        role_service: RoleService = Depends()
 ) -> List[RoleResponse]:
     try:
         roles = await role_service.get_user_roles(user_id)

@@ -45,6 +45,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# OAuth2 configuration for Swagger UI
+app.swagger_ui_init_oauth = {
+    "usePkceWithAuthorizationCodeGrant": True,
+    "persistAuthorization": True
+}
+
+# OpenAPI security scheme configuration
+app.openapi_components = {
+    "securitySchemes": {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Введите ваш JWT токен в формате: **Bearer &lt;token&gt;**\n\n"
+                         "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
+        }
+    }
+}
+
+# Apply security globally to all endpoints that require authentication
+app.openapi_security = [{"bearerAuth": []}]
+
 setup_middleware(app, get_redis())
 RequestsInstrumentor().instrument()
 FastAPIInstrumentor.instrument_app(app)

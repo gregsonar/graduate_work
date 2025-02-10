@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,8 +15,6 @@ from auth.core.decorators import validate_roles
 from typing import Dict, Any
 
 from auth.db.crud import AccessLogRepository
-from auth.tests.conftest import token_service
-
 
 router = APIRouter(
     responses={
@@ -26,34 +25,32 @@ router = APIRouter(
     }
 )
 
+# Security scheme для авторизации через Bearer token
+oauth2_scheme = HTTPBearer()
 
 async def get_auth_service(session: AsyncSession = Depends(get_session),
-                           redis_cli: Redis = Depends(get_redis)) -> AuthService:
+                         redis_cli: Redis = Depends(get_redis)) -> AuthService:
     return AuthService(session, redis_cli)
 
 async def get_token_service(session: AsyncSession = Depends(get_session),
-                           redis_cli: Redis = Depends(get_redis)) -> TokenService:
+                          redis_cli: Redis = Depends(get_redis)) -> TokenService:
     return TokenService(redis_cli, session)
-
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
         auth_request: AuthRequest,
         request: Request,
         auth_service: AuthService = Depends(get_auth_service),
-)-> TokenResponse:
+) -> TokenResponse:
     try:
-        # Получаем IP адрес клиента
         client_host = request.client.host
-        user_agent = request.headers.get('user-agent', 'unknown')  # Получаем User-Agent
+        user_agent = request.headers.get('user-agent', 'unknown')
 
-        # await auth_service.log_access(auth_request.username, client_host, user_agent)
-        # Аутентификация пользователя и получение токенов
         tokens = await auth_service.authenticate_user(
-            auth_request.username, auth_request.password, {'ip': client_host, 'user_agent': user_agent}
+            auth_request.username,
+            auth_request.password,
+            {'ip': client_host, 'user_agent': user_agent}
         )
-
-
 
         return TokenResponse(**tokens)
     except Exception as e:
@@ -62,19 +59,19 @@ async def login(
             detail=str(e)
         )
 
-
 @router.post(
     "/logout",
-    response_model=LogoutResponse
+    response_model=LogoutResponse,
+    dependencies=[Depends(oauth2_scheme)]
 )
 async def logout(
-        access_token: str,
-        refresh_token: str,
+        credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
         auth_service: AuthService = Depends(get_auth_service)
 ) -> Dict[str, str]:
     try:
-        # Аннулирование токенов
-        await auth_service.logout_user(access_token, refresh_token)
+        access_token = credentials.credentials
+        # В этом случае мы не требуем refresh token для логаута
+        await auth_service.logout_user(access_token, None)
         return {"detail": "Successfully logged out"}
     except Exception as e:
         raise HTTPException(
@@ -82,25 +79,22 @@ async def logout(
             detail="Error during logout: " + str(e)
         )
 
-
 @router.post(
     "/refresh",
     response_model=TokenResponse
 )
 async def refresh(
-        refresh_token: str,
+        credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
         auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenResponse:
     try:
-        # Обновление токенов
-        tokens = await auth_service.refresh_token(refresh_token)
+        tokens = await auth_service.refresh_token(credentials.credentials)
         return TokenResponse(**tokens)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Failed to refresh token: " + str(e)
         )
-
 
 @router.post(
     "/register",
@@ -111,9 +105,6 @@ async def register(
         auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenResponse:
     try:
-        print(auth_request)
-        print("AHAHAH" * 100)
-        # Регистрация пользователя
         await auth_service.register_user(
             auth_request.username,
             auth_request.password,
@@ -121,9 +112,9 @@ async def register(
             auth_request.is_superuser
         )
 
-        # После регистрации сразу создаем токены
         tokens = await auth_service.authenticate_user(
-            auth_request.username, auth_request.password
+            auth_request.username,
+            auth_request.password
         )
         return TokenResponse(**tokens)
     except Exception as e:
@@ -132,20 +123,21 @@ async def register(
             detail="Registration failed: " + str(e)
         )
 
-
 @router.get(
     "/me",
     response_model=CurrentUserResponse
 )
 async def get_current_user(
-        token: str,
+        credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
         token_service: TokenService = Depends(get_token_service)
 ) -> CurrentUserResponse:
     try:
-        # Получение данных о текущем пользователе
-        user_data = await token_service.get_current_user(token)
+        user_data = await token_service.get_current_user(credentials.credentials)
         if not user_data:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
         return CurrentUserResponse(**user_data)
     except Exception as e:
         raise HTTPException(
@@ -153,10 +145,10 @@ async def get_current_user(
             detail="Failed to retrieve current user: " + str(e)
         )
 
-
 @router.patch(
     "/change_password",
-    response_model=PasswordChangeResponse
+    response_model=PasswordChangeResponse,
+    dependencies=[Depends(oauth2_scheme)]
 )
 async def change_password(
         change_password_request: PasswordChangeRequest,
@@ -164,9 +156,11 @@ async def change_password(
         current_user = validate_roles()
 ):
     try:
-        await auth_service.change_password(current_user['id'],
-                                       old_password=change_password_request.current_password,
-                                       new_password=change_password_request.new_password)
+        await auth_service.change_password(
+            current_user['id'],
+            old_password=change_password_request.current_password,
+            new_password=change_password_request.new_password
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -174,7 +168,8 @@ async def change_password(
         )
 
 @router.get(
-    "/access_logs"
+    "/access_logs",
+    dependencies=[Depends(oauth2_scheme)]
 )
 async def get_access_logs(
         page: int,

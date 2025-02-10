@@ -21,7 +21,7 @@ pydantic[email]
 uvicorn==0.32.0
 gunicorn==23.0.0
 aiohttp==3.11.8
-python-multipart==0.0.17
+python-multipart==0.0.20
 async-fastapi-jwt-auth==0.6.6
 opentelemetry-api==1.28.2
 opentelemetry-sdk==1.28.2

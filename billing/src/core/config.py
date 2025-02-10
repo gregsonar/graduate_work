@@ -23,8 +23,6 @@ class Setting(BaseSettings):
     dsn_sync: str = f'postgresql://{postgres.user}:{postgres.password}@{postgres.host}:{postgres.port}/{postgres.name}'
     yookassa_token: str
     yookassa_shopid: str
-    webhook_api_url: str
-    payment_redirect_url: str
 
     SUBSCRIPTIONS_URL: str = 'http://auth_api:8000/api/v1/subscription'
 

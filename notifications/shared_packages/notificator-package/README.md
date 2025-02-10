@@ -1,1 +1,0 @@
-### Notificator  for YAPrakt middle python Notification service

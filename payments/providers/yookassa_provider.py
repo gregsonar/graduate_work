@@ -84,30 +84,44 @@ class YooKassaProvider:
         except PaymentCaptureError as e:
             raise PaymentCaptureError(f"Payment capture failed: {str(e)}")
 
-    def handle_webhook(self, event: str, data: Dict) -> None:
+    def handle_webhook(self, event: str, data: dict):
         handlers = {
             'payment.succeeded': self._handle_payment_succeeded,
             'payment.canceled': self._handle_payment_canceled,
+            'payment.waiting_for_capture': self._handle_waiting_capture,
             'refund.succeeded': self._handle_refund_succeeded
         }
 
-        handler = handlers.get(event)
-        if handler:
+        if handler := handlers.get(event):
             handler(data)
+            self.logger.info(f"Handled {event} for payment {data.get('id')}")
+        else:
+            self.logger.warning(f"Unhandled event type: {event}")
 
         # todo: add unhandled webhook type exception
 
-    def _handle_payment_succeeded(self, data: Dict) -> None:
-        # Логика обработки успешного платежа
-        payment = YooKassaPaymentSchema(**data)
-        print(f"Payment {payment.id} succeeded")
+    def _handle_payment_succeeded(self, data: dict):
+        # Обновляем статус платежа в вашей системе
+        payment_id = data['id']
+        self._update_payment_status(payment_id, 'succeeded')
 
-    def _handle_payment_canceled(self, data: Dict) -> None:
-        # Логика обработки отмены
-        payment = YooKassaPaymentSchema(**data)
-        print(f"Payment {payment.id} canceled")
+    def _handle_payment_canceled(self, data: dict):
+        payment_id = data['id']
+        self._update_payment_status(payment_id, 'canceled')
 
-    def _handle_refund_succeeded(self, data: Dict) -> None:
-        # Логика обработки возврата
-        refund = YooKassaRefundSchema(**data)
-        print(f"Refund {refund.id} succeeded")
+    def _handle_waiting_capture(self, data: dict):
+        payment_id = data['id']
+        self._update_payment_status(payment_id, 'waiting_for_capture')
+
+    def _handle_refund_succeeded(self, data: dict):
+        refund_id = data['id']
+        payment_id = data['payment_id']
+        self._process_refund(refund_id, payment_id)
+
+    def _update_payment_status(self, payment_id: str, status: str):
+        # Реализуйте логику обновления статуса в вашей БД
+        print(f"Updating payment {payment_id} to status {status}")
+
+    def _process_refund(self, refund_id: str, payment_id: str):
+        # Реализуйте логику обработки возврата
+        print(f"Processing refund {refund_id} for payment {payment_id}")

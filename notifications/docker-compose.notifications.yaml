@@ -7,7 +7,7 @@ services:
       - .env.sample
     networks:
       - backend
-      - notifications_network
+      - notification_network
 
   notification-api-test:
       build:
@@ -21,8 +21,7 @@ services:
         - notification-api-flask
       networks:
         - backend
-        - notifications_network
-
+        - notification_network
 
   notification-api-flask:
       build:
@@ -36,68 +35,89 @@ services:
         - .env.sample
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
   notification-rabbitmq:
     image: rabbitmq:3.7-management
     restart: always
     env_file:
       - .env.sample
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - backend
-      - notifications_network
+      - notification_network
 
   notification_consumer_welcome:
     build:
-      context: ./notification_consumer_welcome
-      dockerfile: ../docker/development/notification_consumer/Dockerfile
+      context: .
+      dockerfile: docker/development/notification_consumer/Dockerfile
     restart: always
     volumes:
       - ./notification_consumer_welcome:/usr/src/app/
+      - ./notificator:/usr/src/app/notificator
     env_file:
       - .env.sample
+    depends_on:
+      notification-rabbitmq:
+        condition: service_healthy
     networks:
       - backend
-      - notifications_network
+      - notification_network
 
   notification_consumer_to_all:
       build:
-        context: ./notification_consumer_to_all
-        dockerfile: ../docker/development/notification_consumer/Dockerfile
+        context: .
+        dockerfile: docker/development/notification_consumer/Dockerfile
       restart: always
       volumes:
         - ./notification_consumer_to_all:/usr/src/app/
+        - ./notificator:/usr/src/app/notificator
       env_file:
         - .env.sample
+      depends_on:
+        notification-rabbitmq:
+          condition: service_healthy
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
   notification_consumer_instant_email_messages:
       build:
-        context: ./notification_consumer_instant_email_messages
-        dockerfile: ../docker/development/notification_consumer/Dockerfile
+        context: .
+        dockerfile: docker/development/notification_consumer/Dockerfile
       restart: always
       volumes:
         - ./notification_consumer_instant_email_messages:/usr/src/app/
+        - ./notificator:/usr/src/app/notificator
       env_file:
         - .env.sample
+      depends_on:
+        notification-rabbitmq:
+          condition: service_healthy
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
   notification_consumer_sheduler:
       build:
-        context: ./notification_consumer_sheduler
-        dockerfile: ../docker/development/notification_consumer/Dockerfile
+        context: .
+        dockerfile: docker/development/notification_consumer/Dockerfile
       restart: always
       volumes:
         - ./notification_consumer_sheduler:/usr/src/app/
+        - ./notificator:/usr/src/app/notificator
       env_file:
         - .env.sample
+      depends_on:
+        notification-rabbitmq:
+          condition: service_healthy
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
   notification_db:
     image: postgres:16.0
@@ -108,7 +128,7 @@ services:
       - .env.sample
     networks:
       - backend
-      - notifications_network
+      - notification_network
 
   notification_websockets:
       build:
@@ -121,8 +141,7 @@ services:
         - .env.sample
       networks:
         - backend
-        - notifications_network
-
+        - notification_network
 
   notification_scheduler_celery_beat:
       build:
@@ -135,7 +154,7 @@ services:
         - .env.sample
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
   notification_scheduler_celery_messages:
       build:
@@ -148,17 +167,14 @@ services:
         - .env.sample
       networks:
         - backend
-        - notifications_network
+        - notification_network
 
-  # mailer:
-  #     image: mailhog/mailhog
-  #     restart: always
-  #     networks:
-  #       - backend
-networks:
-  notifications_network:
-    driver: bridge
-    name: notifications_network
+  mailer:
+     image: mailhog/mailhog
+     restart: always
+     networks:
+       - backend
+       - notification_network
 
 volumes:
   notification_postgres_data:

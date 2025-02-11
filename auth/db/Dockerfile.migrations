@@ -23,7 +23,7 @@ RUN pip install -r requirements.txt
 ENV PYTHONPATH=/app
 
 # Копируем и делаем исполняемым скрипт ожидания БД
-COPY ./db/wait-for-db.sh /app/auth/db/wait-for-db.sh
+# COPY ./db/wait-for-db.sh /app/auth/db/wait-for-db.sh
 RUN chmod +x /app/auth/db/wait-for-db.sh
 
 WORKDIR /app/auth/db

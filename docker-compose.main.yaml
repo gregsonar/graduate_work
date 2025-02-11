@@ -12,20 +12,20 @@ services:
         condition: service_healthy
       django-admin:
         condition: service_healthy
-#      notification-api-flask:
-#        condition: service_started
+      notification-api-flask:
+        condition: service_started
     networks:
       - backend
       - auth_network
       - postgres_admin_network
-#      - notification_network
+      - notification_network
       - subscription_network
     restart: unless-stopped
 
 include:
   - admin/docker-compose.admin.yml
   - auth/docker-compose.auth.yaml
-#  - notifications/docker-compose.notifications.yaml
+  - notifications/docker-compose.notifications.yaml
   - subscriptions/docker-compose.subscriptions.yaml
 
 networks:
@@ -38,9 +38,9 @@ networks:
   postgres_admin_network:
     driver: bridge
     name: postgres_admin_network
-#  notification_network:
-#    driver: bridge
-#    name: notification_network
+  notification_network:
+    driver: bridge
+    name: notification_network
   subscription_network:
     driver: bridge
     name: subscription_network

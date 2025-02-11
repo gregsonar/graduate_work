@@ -50,6 +50,8 @@ services:
     networks:
       - backend
       - notification_network
+    ports:
+      - "5672:5672"
 
   notification_consumer_welcome:
     build:

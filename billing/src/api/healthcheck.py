@@ -14,4 +14,4 @@ router = APIRouter()
 )
 def healthcheck() -> Response:
     """Check if service healthy."""
-    return Response(status_code=status.HTTP_200_OK)
+    return Response(status_code=status.HTTP_200_OK, content="Its a live")

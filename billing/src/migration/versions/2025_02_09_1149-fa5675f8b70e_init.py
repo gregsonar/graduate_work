@@ -23,13 +23,13 @@ def upgrade() -> None:
         'refund',
         sa.Column(
             'payment_id',
-            sa.VARCHAR(),
+            type_=sa.VARCHAR(),
             nullable=False,
         ),
         sa.Column('refund_id', sa.UUID(), nullable=False),
         sa.Column(
             'amount',
-            sa.INTEGER(),
+            existing_type=sa.INTEGER(),
             type_=sa.Numeric(precision=6, scale=2),
             nullable=False,
         ),

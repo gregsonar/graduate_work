@@ -61,3 +61,4 @@ wcwidth==0.2.13 ; python_version >= "3.12"
 wrapt==1.17.2 ; python_version >= "3.12"
 yarl==1.18.3 ; python_version >= "3.12"
 yookassa==3.5.0 ; python_version >= "3.12"
+redis==4.3.4

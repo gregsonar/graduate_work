@@ -13,13 +13,11 @@ from billing.src.models.tariffs import TariffModel
 
 from payments.providers.yookassa_provider import YooKassaProvider
 
-from db.postgres import get_sync_session
-from core.config import settings
+from billing.src.db.postgres import get_sync_session
+from billing.src.core.config import settings
 
 
-celery = Celery(__name__)
-celery.conf.broker_url = settings.celery.broker_url
-celery.conf.result_backend = settings.celery.broker_url
+celery = Celery(__name__, broker=settings.celery_broker_url, backend=settings.celery_broker_url)
 
 provider=YooKassaProvider(
     account_id=settings.yookassa_shopid,

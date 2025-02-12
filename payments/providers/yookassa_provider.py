@@ -26,7 +26,8 @@ class YooKassaProvider:
             description: str = "",
             metadata: Optional[Dict] = None,
             capture: bool = False,
-            idempotence_key: Optional[UUID] = None
+            idempotence_key: Optional[UUID] = None,
+            save_payment_method: Optional[bool] = False
     ) -> Dict[str, Any]:
         try:
             idempotence_key = idempotence_key or self._generate_idempotence_key()
@@ -40,6 +41,7 @@ class YooKassaProvider:
                     "type": "redirect",
                     "return_url": "https://your-service.com/return"  # todo: добавить в .env
                 },
+                "save_payment_method": save_payment_method,  # Сохранение платежных данных для проведения автоплатежей
                 "capture": capture,
                 "description": description,
                 "metadata": metadata or {}

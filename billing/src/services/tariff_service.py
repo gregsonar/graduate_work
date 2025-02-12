@@ -1,10 +1,10 @@
 from fastapi import Depends
 from sqlalchemy import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.postgres import get_async_session
-from models.tariffs import TariffModel
-from schemas.tariff_schemas import TariffSchema
+from billing.src.db.postgres import get_session
+from billing.src.models.tariffs import TariffModel
+from billing.src.schemas.tariff_schemas import TariffSchema
 
 
 class TariffService:
@@ -30,6 +30,6 @@ class TariffService:
 
 
 def get_tariff_service(
-        session: AsyncSession = Depends(get_async_session)
+        session: AsyncSession = Depends(get_session)
 ):
     return TariffService(session)

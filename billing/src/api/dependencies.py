@@ -13,7 +13,9 @@ oauth2_scheme = HTTPBearer(
 )
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+async def get_current_user(
+        credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
+):
     """Get current user from auth service"""
     authorization = f"{credentials.scheme} {credentials.credentials}"
     async with httpx.AsyncClient() as client:

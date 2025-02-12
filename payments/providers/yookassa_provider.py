@@ -99,6 +99,13 @@ class YooKassaProvider(BasePaymentProvider):
         except PaymentCaptureError as e:
             raise PaymentCaptureError(f"Payment capture failed: {str(e)}")
 
+    def refund_payment(self,
+                       payment_id: str,
+                       idempotence_key: Optional[UUID] = None
+    ) -> Dict[str, Any]:
+        # Логика возвратов
+        pass
+
     def handle_webhook(self, event: str, data: dict):
         handlers = {
             'payment.succeeded': self._handle_payment_succeeded,
@@ -134,9 +141,9 @@ class YooKassaProvider(BasePaymentProvider):
         self._process_refund(refund_id, payment_id)
 
     def _update_payment_status(self, payment_id: str, status: str):
-        # Реализуйте логику обновления статуса в вашей БД
+        # логгирование информации о платеже
         print(f"Updating payment {payment_id} to status {status}")
 
     def _process_refund(self, refund_id: str, payment_id: str):
-        # Реализуйте логику обработки возврата
+        # Логику обработки возврата
         print(f"Processing refund {refund_id} for payment {payment_id}")

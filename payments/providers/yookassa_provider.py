@@ -7,11 +7,12 @@ from uuid import UUID, uuid4
 import requests
 from yookassa import Configuration, Payment
 
+from payments.providers.base import BasePaymentProvider
 from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
 
 
-class YooKassaProvider:
+class YooKassaProvider(BasePaymentProvider):
     def __init__(self, account_id: str, secret_key: str):
         Configuration.configure(account_id, secret_key)
 

@@ -39,7 +39,7 @@
             const [instantMessage, setInstantMessage] = React.useState({
                 body: '',
                 subject: '',
-                message_type: 'email',
+                message_type: 'EMAIL',
                 user_id: ''
             });
 
@@ -209,8 +209,8 @@
                                             value={instantMessage.message_type}
                                             onChange={(e) => setInstantMessage({...instantMessage, message_type: e.target.value})}
                                         >
-                                            <option value="email">Email</option>
-                                            <option value="websocket">WebSocket</option>
+                                            <option value="EMAIL">Email</option>
+                                            <option value="WEBSOCKET">WebSocket</option>
                                         </select>
                                     </div>
                                     <button type="submit" className="button">Send Message</button>

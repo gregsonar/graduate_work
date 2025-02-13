@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Admin</title>
+    <!-- React -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Добавляем базовые стили -->
+    <style>
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; padding: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .input { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .textarea { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-height: 100px; }
+        .button { background: #0066cc; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
+        .button:hover { background: #0052a3; }
+        .tab-list { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .tab { padding: 0.5rem 1rem; cursor: pointer; border: none; background: none; }
+        .tab.active { border-bottom: 2px solid #0066cc; }
+        .select { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .alert { padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function NotificationAdmin() {
+            const [activeTab, setActiveTab] = React.useState('instant');
+            const [response, setResponse] = React.useState(null);
+
+            // States for forms
+            const [instantMessage, setInstantMessage] = React.useState({
+                body: '',
+                subject: '',
+                message_type: 'email',
+                user_id: ''
+            });
+
+            const [newUserMessage, setNewUserMessage] = React.useState({
+                user_id: ''
+            });
+
+            const [globalMessage, setGlobalMessage] = React.useState({
+                body: ''
+            });
+
+            const [rule, setRule] = React.useState({
+                name: '',
+                template: '',
+                subject: '',
+                timetable: {
+                    min: 0,
+                    h: 0,
+                    day: 1,
+                    month: 1,
+                    week_day: 0
+                }
+            });
+
+            // Handle form submissions
+            const handleInstantMessage = async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch('/instant_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(instantMessage),
+                    });
+                    const data = await res.json();
+                    setResponse({ success: res.ok, message: res.ok ? 'Message sent successfully' : data.message });
+                } catch (error) {
+                    setResponse({ success: false, message: 'Error sending message' });
+                }
+            };
+
+            const handleNewUser = async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch('/new-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(newUserMessage),
+                    });
+                    const data = await res.json();
+                    setResponse({ success: res.ok, message: res.ok ? 'Welcome message sent' : data.message });
+                } catch (error) {
+                    setResponse({ success: false, message: 'Error sending welcome message' });
+                }
+            };
+
+            const handleGlobalMessage = async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch('/to-all', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(globalMessage),
+                    });
+                    const data = await res.json();
+                    setResponse({ success: res.ok, message: res.ok ? 'Global message sent' : data.message });
+                } catch (error) {
+                    setResponse({ success: false, message: 'Error sending global message' });
+                }
+            };
+
+            const handleRule = async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch('/rule', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(rule),
+                    });
+                    const data = await res.json();
+                    setResponse({ success: res.ok, message: res.ok ? 'Rule created successfully' : data.message });
+                } catch (error) {
+                    setResponse({ success: false, message: 'Error creating rule' });
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="card">
+                        <h1>Notification Admin Interface</h1>
+                    </div>
+
+                    {response && (
+                        <div className={`alert ${response.success ? 'alert-success' : 'alert-error'}`}>
+                            {response.message}
+                        </div>
+                    )}
+
+                    <div className="tab-list">
+                        <button
+                            className={`tab ${activeTab === 'instant' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('instant')}
+                        >
+                            Instant Message
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'welcome' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('welcome')}
+                        >
+                            Welcome Message
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'global' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('global')}
+                        >
+                            Global Message
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'rule' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('rule')}
+                        >
+                            Rule
+                        </button>
+                    </div>
+
+                    <div className="card">
+                        {activeTab === 'instant' && (
+                            <div>
+                                <h2>Send Instant Message</h2>
+                                <form onSubmit={handleInstantMessage}>
+                                    <div className="form-group">
+                                        <input
+                                            className="input"
+                                            placeholder="User ID"
+                                            value={instantMessage.user_id}
+                                            onChange={(e) => setInstantMessage({...instantMessage, user_id: e.target.value})}
+                                        />
+                                        <input
+                                            className="input"
+                                            placeholder="Subject"
+                                            value={instantMessage.subject}
+                                            onChange={(e) => setInstantMessage({...instantMessage, subject: e.target.value})}
+                                        />
+                                        <textarea
+                                            className="textarea"
+                                            placeholder="Message body"
+                                            value={instantMessage.body}
+                                            onChange={(e) => setInstantMessage({...instantMessage, body: e.target.value})}
+                                        />
+                                        <select
+                                            className="select"
+                                            value={instantMessage.message_type}
+                                            onChange={(e) => setInstantMessage({...instantMessage, message_type: e.target.value})}
+                                        >
+                                            <option value="email">Email</option>
+                                            <option value="websocket">WebSocket</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="button">Send Message</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {activeTab === 'welcome' && (
+                            <div>
+                                <h2>Send Welcome Message</h2>
+                                <form onSubmit={handleNewUser}>
+                                    <div className="form-group">
+                                        <input
+                                            className="input"
+                                            placeholder="User ID"
+                                            value={newUserMessage.user_id}
+                                            onChange={(e) => setNewUserMessage({...newUserMessage, user_id: e.target.value})}
+                                        />
+                                    </div>
+                                    <button type="submit" className="button">Send Welcome Message</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {activeTab === 'global' && (
+                            <div>
+                                <h2>Send Global Message</h2>
+                                <form onSubmit={handleGlobalMessage}>
+                                    <div className="form-group">
+                                        <textarea
+                                            className="textarea"
+                                            placeholder="Message body"
+                                            value={globalMessage.body}
+                                            onChange={(e) => setGlobalMessage({...globalMessage, body: e.target.value})}
+                                        />
+                                    </div>
+                                    <button type="submit" className="button">Send Global Message</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {activeTab === 'rule' && (
+                            <div>
+                                <h2>Create Notification Rule</h2>
+                                <form onSubmit={handleRule}>
+                                    <div className="form-group">
+                                        <input
+                                            className="input"
+                                            placeholder="Rule name"
+                                            value={rule.name}
+                                            onChange={(e) => setRule({...rule, name: e.target.value})}
+                                        />
+                                        <input
+                                            className="input"
+                                            placeholder="Subject"
+                                            value={rule.subject}
+                                            onChange={(e) => setRule({...rule, subject: e.target.value})}
+                                        />
+                                        <textarea
+                                            className="textarea"
+                                            placeholder="Template"
+                                            value={rule.template}
+                                            onChange={(e) => setRule({...rule, template: e.target.value})}
+                                        />
+                                        <div className="grid">
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                min="0"
+                                                max="59"
+                                                placeholder="Min"
+                                                value={rule.timetable.min}
+                                                onChange={(e) => setRule({
+                                                    ...rule,
+                                                    timetable: {...rule.timetable, min: parseInt(e.target.value)}
+                                                })}
+                                            />
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                min="0"
+                                                max="23"
+                                                placeholder="Hour"
+                                                value={rule.timetable.h}
+                                                onChange={(e) => setRule({
+                                                    ...rule,
+                                                    timetable: {...rule.timetable, h: parseInt(e.target.value)}
+                                                })}
+                                            />
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                min="1"
+                                                max="31"
+                                                placeholder="Day"
+                                                value={rule.timetable.day}
+                                                onChange={(e) => setRule({
+                                                    ...rule,
+                                                    timetable: {...rule.timetable, day: parseInt(e.target.value)}
+                                                })}
+                                            />
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                min="1"
+                                                max="12"
+                                                placeholder="Month"
+                                                value={rule.timetable.month}
+                                                onChange={(e) => setRule({
+                                                    ...rule,
+                                                    timetable: {...rule.timetable, month: parseInt(e.target.value)}
+                                                })}
+                                            />
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                min="0"
+                                                max="6"
+                                                placeholder="Week day"
+                                                value={rule.timetable.week_day}
+                                                onChange={(e) => setRule({
+                                                    ...rule,
+                                                    timetable: {...rule.timetable, week_day: parseInt(e.target.value)}
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <button type="submit" className="button">Create Rule</button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<NotificationAdmin />);
+    </script>
+</body>
+</html>

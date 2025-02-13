@@ -11,4 +11,10 @@ COPY ./requirements.txt ./
 
 RUN pip install -r ./requirements.txt
 
+# Create a non-root user
+RUN useradd -m celery_user
+RUN chown -R celery_user:celery_user /usr/src/notification_scheduler
+
+USER celery_user
+
 CMD cd .. && celery -A notification_scheduler worker --loglevel=debug --concurrency=10

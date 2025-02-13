@@ -1,4 +1,71 @@
-{% extends "base.html" %}
-{% block content %}
-    {{ body }}
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Notification</title>
+    <style>
+        /* Базовые стили */
+        body {
+            background-color: #f6f6f6;
+            font-family: sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+        .container {
+            display: block;
+            margin: 0 auto !important;
+            max-width: 580px;
+            padding: 10px;
+            width: 580px;
+        }
+        .content {
+            box-sizing: border-box;
+            display: block;
+            margin: 0 auto;
+            max-width: 580px;
+            padding: 10px;
+        }
+        .main {
+            background: #ffffff;
+            border-radius: 3px;
+            width: 100%;
+        }
+        .wrapper {
+            box-sizing: border-box;
+            padding: 20px;
+        }
+        .content-block {
+            padding-bottom: 10px;
+            padding-top: 10px;
+        }
+        .footer {
+            clear: both;
+            margin-top: 10px;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="main">
+                <div class="wrapper">
+                    <div class="content-block">
+                        {{ body }}
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <p>© 2025 Movie Theater. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

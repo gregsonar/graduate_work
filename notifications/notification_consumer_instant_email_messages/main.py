@@ -10,16 +10,29 @@ from logger import logger
 def process_message(ch, method, properties, message_data) -> None:
     data = json.loads(message_data)
 
-    body: str = data.body
-    user: dict = data.user
-    subject: str = data.subject
+    body: str = data['body']
+    subject: str = data['subject']
+    user_id: str = data['user_id']
 
-    html = message_processor.render_template(body=body, template='message.html')
+    # Создаем фиктивный словарь пользователя, так как у нас есть только user_id
+    user = {'id': user_id, 'email': None}
+    
+    # Получаем email пользователя из базы данных через message_processor
+    with message_processor.get_db_connection() as conn, conn.cursor() as cursor:
+        cursor.execute('SELECT email FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        if result:
+            user['email'] = result[0]
+
+    html = message_processor.render_template(template='message.html', body=body)
     sender = config.mailer_from_email
     email = user.get('email')
+    
     if email:
-        message_processor.send_email(user['email'], sender, subject, html)
-        message_processor.save_to_db(user_id=user['id'], message=subject)
+        message_processor.send_email(email, sender, subject, html)
+        message_processor.save_to_db(user_id=user_id, message=subject)
+    else:
+        logger.error(f'Email not found for user {user_id}')
 
 
 if __name__ == '__main__':

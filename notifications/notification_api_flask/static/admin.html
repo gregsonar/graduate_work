@@ -76,9 +76,17 @@
                         body: JSON.stringify(instantMessage),
                     });
                     const data = await res.json();
-                    setResponse({ success: res.ok, message: res.ok ? 'Message sent successfully' : data.message });
+                    if (res.ok) {
+                        setResponse({ success: true, message: data.message });
+                    } else {
+                        let errorMessage = data.message;
+                        if (data.errors) {
+                            errorMessage += ': ' + JSON.stringify(data.errors);
+                        }
+                        setResponse({ success: false, message: errorMessage });
+                    }
                 } catch (error) {
-                    setResponse({ success: false, message: 'Error sending message' });
+                    setResponse({ success: false, message: 'Error sending message: ' + error.message });
                 }
             };
 

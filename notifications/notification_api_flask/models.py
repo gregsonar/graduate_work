@@ -19,15 +19,6 @@ class User(db.Model):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = db.Column(db.String(255), nullable=False, unique=True)
-    password = db.Column(db.String(255), nullable=False)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    last_login = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean(True))
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    role = db.Column(
-        db.Enum(Roles, name='user_roles'), default=Roles.user, nullable=False
-    )
 
     def __repr__(self) -> str:
         return f'<id {self.id}>'

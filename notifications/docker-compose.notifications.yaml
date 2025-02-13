@@ -134,8 +134,7 @@ services:
       volumes:
         - ./notification_websocket_server:/usr/src/app/
       ports:
-        - "8756:8756"
-        - "8000:8000"
+        - "8765:8765"
       env_file:
         - .env.sample
       depends_on:

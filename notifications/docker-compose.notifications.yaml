@@ -3,11 +3,9 @@ services:
     image: postgres:16.0
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data/
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env.sample
     networks:
-      
       - notification_network
 
 
@@ -22,7 +20,6 @@ services:
       depends_on:
         - notification-api-flask
       networks:
-        
         - notification_network
 
 
@@ -37,7 +34,6 @@ services:
       env_file:
         - .env.sample
       networks:
-        
         - notification_network
 
   notification-rabbitmq:
@@ -51,7 +47,6 @@ services:
       timeout: 10s
       retries: 5
     networks:
-      
       - notification_network
     ports:
       - "15672:15672"
@@ -71,7 +66,6 @@ services:
       notification-rabbitmq:
         condition: service_healthy
     networks:
-      
       - notification_network
 
   notification_consumer_to_all:
@@ -88,7 +82,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        
         - notification_network
 
   notification_consumer_instant_email_messages:
@@ -105,7 +98,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        
         - notification_network
 
   notification_consumer_sheduler:
@@ -122,7 +114,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        
         - notification_network
 
   notification_db:
@@ -133,7 +124,6 @@ services:
     env_file:
       - .env.sample
     networks:
-      
       - notification_network
 
   notification_websockets:
@@ -148,8 +138,10 @@ services:
         - "8000:8000"
       env_file:
         - .env.sample
+      depends_on:
+        notification-rabbitmq:
+          condition: service_healthy
       networks:
-        
         - notification_network
 
   notification_scheduler_celery_beat:
@@ -162,7 +154,6 @@ services:
       env_file:
         - .env.sample
       networks:
-        
         - notification_network
 
   notification_scheduler_celery_messages:
@@ -202,8 +193,8 @@ services:
 volumes:
   notification_postgres_data:
 
-networks:
-  notification_network:
-    driver: bridge
+# networks:
+#   notification_network:
+#     driver: bridge
 
 # d6fa8c32-fdce-44cf-9444-9848119c36a3

@@ -26,15 +26,15 @@ if __name__ == '__main__':
     @psycopg2_cursor_fetch_users
     def process_message(ch, method, properties, body, cursor: DictCursor) -> None:
         decoded_body = body.decode('utf-8')
-        query = 'SELECT id, email, last_name, first_name FROM users'
+        query = 'SELECT id, email FROM users'
         cursor.itersize = PROCESS_USERS_BATCH_SIZE
         cursor.execute(query)
         users = cursor.fetchall()
         for user in users:
             html = message_processor.render_template(
                 'message.html',
-                first_name=user['first_name'],
-                last_name=user['last_name'],
+                first_name=user['email'],
+                last_name=user['email'],
                 message=decoded_body,
             )
             sender = config.mailer_from_email

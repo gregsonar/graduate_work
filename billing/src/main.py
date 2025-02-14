@@ -26,6 +26,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
+    root_path="/api/billing",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1}
 )
 

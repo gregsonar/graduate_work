@@ -20,6 +20,7 @@ services:
       - postgres_admin_network
       - notification_network
       - subscription_network
+      - backend_billing
     restart: unless-stopped
 
 include:
@@ -27,6 +28,7 @@ include:
   - auth/docker-compose.auth.yaml
   - notifications/docker-compose.notifications.yaml
   - subscriptions/docker-compose.subscriptions.yaml
+  - docker-compose.billing.yaml
 
 networks:
   backend:
@@ -44,4 +46,7 @@ networks:
   subscription_network:
     driver: bridge
     name: subscription_network
+  backend_billing:
+    driver: bridge
+    name: backend_billing
 

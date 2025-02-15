@@ -83,5 +83,5 @@ class SubscriptionService:
     ) -> list[SubscriptionHistoryResponse]:
         return await self.history_manager.get_history(subscription_id)
 
-    async def get_all_subscription(self, query_dict: Optional[dict]) -> List:
-        return await self.repository.list_subscriptions(**query_dict)
+    async def get_all_subscription(self, query_dict: Optional[dict] = None) -> List:
+        return await self.repository.list_subscriptions(**query_dict or {})

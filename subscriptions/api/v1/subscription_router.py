@@ -1,3 +1,4 @@
+import datetime
 import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -188,3 +189,15 @@ async def get_user_subscriptions(
     """Get all subscriptions for a specific user (admin only)"""
     subscription_service = SubscriptionService(session)
     return await subscription_service.get_all_subscription({"user_id": user_id})
+
+
+@router.get("/admin/due", response_model=list[SubscriptionResponse])
+async def get_user_subscriptions(
+        admin_user=Depends(get_admin_user),
+        session: AsyncSession = Depends(get_session)
+):
+    """Get all subscriptions with today's payment date (admin only)"""
+    subscription_service = SubscriptionService(session)
+    return await subscription_service.get_all_subscription({"end_date": datetime.date.today()})
+
+

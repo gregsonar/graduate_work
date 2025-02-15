@@ -35,7 +35,8 @@ class Command(BaseCommand):
                     "username": username,
                     "email": email,
                     "password": password,
-                    "is_superuser": True
+                    "is_superuser": True,
+                    "roles": ["superuser", "admin"]
                 }
             )
 

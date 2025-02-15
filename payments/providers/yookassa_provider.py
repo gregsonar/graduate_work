@@ -147,3 +147,32 @@ class YooKassaProvider(BasePaymentProvider):
     def _process_refund(self, refund_id: str, payment_id: str):
         # Логику обработки возврата
         print(f"Processing refund {refund_id} for payment {payment_id}")
+
+    def _create_payment_object(
+            self,
+            amount: float,
+            currency: str = "RUB",
+            description: str = "",
+            metadata: Optional[Dict] = None,
+            capture: bool = False,
+            payment_method_id: str = "",
+            idempotence_key: Optional[UUID] = None,
+            save_payment_method: Optional[bool] = False
+    ):
+        payment_data = {
+            "amount": {
+                "value": amount,
+                "currency": currency
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": "https://your-service.com/return"  # todo: добавить в .env
+            },
+            "save_payment_method": save_payment_method,  # Сохранение платежных данных для проведения автоплатежей
+            "capture": capture,
+            "description": description,
+            "metadata": metadata or {}
+        }
+        if payment_method_id:
+            payment_data.update({"payment_method_id": payment_method_id})
+        return Payment.create(payment_data, idempotency_key=idempotence_key)

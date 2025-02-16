@@ -33,6 +33,8 @@ services:
     networks:
       - backend_billing
       - backend
+      - subscription_network
+      - auth_network
 
 #  nginx:
 #    image: nginx:1.22
@@ -64,9 +66,14 @@ services:
       - billing/.env
     networks:
       - backend_billing
+      - subscription_network
+      - auth_network
 
   redis_billing:
     image: redis:7
+    command: --port 6380
+    ports:
+      - "6380:6379"
     networks:
       - backend_billing
 

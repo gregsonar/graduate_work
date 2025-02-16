@@ -8,12 +8,15 @@ class Setting(BaseSettings):
     db_user: str = "admin"
     db_password: str = "123qwe"
 
-    celery_broker_url: str = "redis://redis:6379/0"
+    celery_broker_url: str = "redis://redis_billing:6380/0"
 
     yookassa_token: str = Field(default='1', env="YOOKASSA_TOKEN")
     yookassa_shopid: str = Field(default='1', env="YOOKASSA_SHOPID")
 
-    check_delay_in_seconds: int = 60
+    check_delay_in_seconds: int = 5
+
+    billing_username: str
+    billing_password: str
 
     # Используем декоратор Field для явного указания, что это поле должно быть разрешено
     SUBSCRIPTIONS_URL: str = Field(default='http://auth_api:8000/api/v1/subscription')

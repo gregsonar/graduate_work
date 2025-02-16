@@ -21,7 +21,7 @@ class BillingService:
     SUCCEEDED = 'succeeded'
 
     def __init__(self, db_session: AsyncSession):
-        YooKassaProvider(
+        self.yoo_provider = YooKassaProvider(
             account_id=settings.yookassa_shopid,
             secret_key=settings.yookassa_token,
         )
@@ -34,9 +34,10 @@ class BillingService:
             payment: Dict[str, str],
     )  -> PaymentModel:
         """Метод для сохранения платежа в базе."""
+        print(user_id)
         new_db_payment = PaymentModel(
             user_id=user_id,
-            tariff_id=tariff.id,
+            tariff_id=tariff,
             status=payment.get('status'),
             payment_id=payment.get('id'),
         )
@@ -82,7 +83,7 @@ class BillingService:
         if not tariff:
             raise TariffNotFoundError
 
-        payment = YooKassaProvider.create_payment(
+        payment = self.yoo_provider.create_payment(
             amount=tariff.price,
             currency=tariff.currency,
             description=tariff.description,

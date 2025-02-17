@@ -3,20 +3,14 @@ import json
 import time
 import logging
 from datetime import datetime, timedelta, UTC, timezone
+from celery.schedules import crontab
 
-from aiohttp import ClientResponseError
-from aiohttp.log import access_logger
-from celery.bin.result import result
-from fastapi import HTTPException
+
 
 import httpx
 
-from celery import Celery
-from sqlalchemy.util import await_only
-from starlette import status
-from concurrent.futures import Future
+from celery import Celery, shared_task
 
-from billing.src.api.dependencies import get_current_user
 from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
 
@@ -38,62 +32,6 @@ provider = YooKassaProvider(
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
 )
 
-# async def get_auth_token():
-#     async with httpx.AsyncClient() as client:
-#         # Попытка авторизоваться
-#         auth_data = {
-#             "password": settings.billing_password,
-#             "username": settings.billing_username,
-#         }
-#
-#         try:
-#             auth_response = await client.post(
-#                 'http://auth_api:8000/api/v1/auth/login',
-#                 json=auth_data,
-#             )
-#             auth_response.raise_for_status()
-#             return json.loads(auth_response.text)['access_token']
-#
-#         except httpx.HTTPError as e:
-#             if e.response.status_code == 401:
-#                 logging.warning(
-#                     "Неверные учетные данные. Попробуем зарегистрировать нового пользователя.")
-#
-#                 # Данные для регистрации нового пользователя
-#                 register_data = {
-#                     "email": "test1@example.com",
-#                     "is_superuser": True,
-#                     "password": settings.billing_password,
-#                     "username": settings.billing_username
-#                 }
-#
-#                 try:
-#                     register_response = await client.post(
-#                         'http://auth_api:8000/api/v1/auth/register',
-#                         json=register_data,
-#                         timeout = 2
-#                     )
-#                     register_response.raise_for_status()
-#                     logging.info("Новый пользователь зарегистрирован.")
-#
-#                     # После успешной регистрации снова попытаемся войти
-#                     auth_response = await client.post(
-#                         'http://auth_api:8000/api/v1/auth/login',
-#                         json=auth_data,
-#                         timeout=2
-#                     )
-#                     auth_response.raise_for_status()
-#                     return json.loads(auth_response.text)['access_token']
-#
-#                 except httpx.HTTPError as ex:
-#                     logging.error(f"Произошла ошибка при регистрации: {ex}")
-#                     raise ex
-#
-#             else:
-#                 logging.error(
-#                     f"Произошла неожиданная ошибка при авторизации: {e}")
-#                 raise e
-#
 
 async def subscript_process(payment, tariff, response_text):
     async with httpx.AsyncClient() as client:
@@ -133,6 +71,23 @@ async def subscript_process(payment, tariff, response_text):
             elif response.status_code == 200:
                 # Подписка существует, обновим её
                 response_data = response.json()
+
+                if response_data['status'] == 'expired':
+                    # Подписка истекла, возобновляем её
+                    data = {'status': 'active', 'plan_type': tariff.name,
+                            'end_date': (datetime.now(timezone.utc) + timedelta(
+                                days=tariff.duration)).strftime(
+                                "%Y-%m-%dT%H:%M:%SZ")}
+
+                    # Обновление подписки
+                    response = await client.put(
+                        base_url + f"{response_data['id']}", json=data)
+
+                    if response.status_code == 200:
+                        logger.info("Expired subscription renewed successfully")
+                    else:
+                        logger.error(
+                            f"Failed to renew expired subscription. Status code: {response.status_code}. Response text: {response.text}")
 
                 if response_data['status'] == 'pending':
                     # Активируем подписку
@@ -181,126 +136,6 @@ async def subscript_process(payment, tariff, response_text):
             logger.exception(str(e))
             return {"error": str(e)}
 
-
-
-# async def subscript_process(payment, tariff, response_text):
-#     async with httpx.AsyncClient() as client:
-#         try:
-#             response = await client.get(
-#                 url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/user/{payment.user_id}",
-#             )
-#             # Если подписки не было
-#             if response.status_code == 404:
-#
-#                 # Получаем текущую дату и время в UTC
-#                 now_utc_datetime = datetime.now(tz=timezone.utc)
-#                 end_date = now_utc_datetime + timedelta(days=tariff.duration)
-#
-#                 # Формируем данные для отправки
-#                 data = {
-#                     'user_id': str(payment.user_id),
-#                     'plan_type': tariff.name,
-#                     'start_date': now_utc_datetime.isoformat(),
-#                     'end_date': end_date.isoformat(),
-#                     'price': float(tariff.price),
-#                 }
-#
-#                 # Отправляем запрос на создание подписки
-#                 response = await client.post(
-#                     "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/",
-#                     json=data,
-#                 )
-#                 logger.info(
-#                     f"Subscriptions API response status: {response.status_code}")
-#                 logger.info(f"Subscriptions API response body: {response.text}")
-#                 if response.status_code == 200:
-#                     logger.info("Subscription created successfully")
-#
-#             # Если подписка присутствует
-#             elif response.status_code == 200:
-#                 response_data = json.loads(response.text)
-#                 if response_data['status'] == 'pending':
-#                     data = {'status': 'active'}
-#
-#                     # Отправляем запрос на создание подписки
-#                     response = await client.put(
-#                         url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/{response_data['id']}",
-#                         json=data,
-#                     )
-#                     logger.info(
-#                         f"Subscriptions API response status: {response.status_code}")
-#                     logger.info(f"Subscriptions API response body: {response.text}")
-#
-#                 elif response_data['status'] == 'active':
-#                     old_end_date = datetime.strptime(response_data['end_date'],
-#                                                      "%Y-%m-%dT%H:%M:%SZ")
-#                     new_end_date = old_end_date + timedelta(days=tariff.duration)
-#                     data = {'end-date': 'new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ")'}
-#
-#                     # Отправляем запрос на создание подписки
-#                     response = await client.put(
-#                         url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/{response_data['id']}",
-#                         json=data,
-#                     )
-#                     logger.info(
-#                         f"Subscriptions API response status: {response.status_code}")
-#                     logger.info(f"Subscriptions API response body: {response.text}")
-#
-#             else:
-#                 logger.info(f"Something went wrong with the subscription API. Status code: {response.status_code}")
-#
-#         except Exception as e:
-#             return {"error": str(e)}
-#         logger.info(
-#             f"Subscriptions API response status: {response.status_code}")
-#         logger.info(f"Subscriptions API response body: {response.text}")
-    #
-    # # Получаем текущую дату и время в UTC
-    # now_utc_datetime = datetime.now(tz=timezone.utc)
-    # end_date = now_utc_datetime + timedelta(days=tariff.duration)
-    #
-    # # Формируем данные для отправки
-    # data = {
-    #     'user_id': str(payment.user_id),
-    #     'plan_type': tariff.name,
-    #     'start_date': now_utc_datetime.isoformat(),
-    #     'end_date': end_date.isoformat(),
-    #     'price': float(tariff.price),
-    #     'status': 'active',
-    # }
-    # print(data)
-    # # Отправляем POST-запрос на subscriptions_api
-    # # access_token = await get_auth_token()
-    # async with httpx.AsyncClient() as client:
-    #     try:
-    #          # Формирование заголовков с токеном аутентификации
-    #         # headers = {"Authorization": f"Bearer {access_token}"}
-    #
-    #         # Отправка POST-запроса
-    #         response = await client.post(
-    #             "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/",
-    #             json=data,
-    #             # headers=headers
-    #         )
-    #
-    #         logger.info(
-    #             f"Subscriptions API response status: {response.status_code}")
-    #         logger.info(f"Subscriptions API response body: {response.text}")
-    #
-    #     except HTTPException as e:
-    #         # Обрабатываем исключение и возвращаем понятное сообщение
-    #         message = f"Subscription creation failed: {e.detail}"
-    #         logger.error(message)
-    #         raise Exception(message)
-    #
-    #     except httpx.RequestError as e:
-    #         logger.error(f"Request to subscriptions API failed: {e}")
-    #         raise HTTPException(
-    #             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-    #             detail="Subscriptions API is unavailable"
-    #         )
-    #
-
 @celery.task(name="Check payment status & subscribe")
 def subscribe(payment_model_id, payment_id, payment_status):
     tries = 1
@@ -346,3 +181,44 @@ def subscribe(payment_model_id, payment_id, payment_status):
 
         tries += 1
         delay_in_seconds += delay_in_seconds
+
+
+@shared_task
+def check_subscriptions_expiration():
+    loop = asyncio.new_event_loop()
+    task = asyncio.ensure_future(check_subscriptions_expiration_async(loop))
+    result = loop.run_until_complete(task)
+
+async def check_subscriptions_expiration_async(loop):
+    async with httpx.AsyncClient() as client:
+        try:
+            # Получение списка всех активных подписок
+            response = await client.get("http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/admin/all")
+            subscriptions = response.json()
+
+            for subscription in subscriptions:
+                if subscription["status"] == "active":
+                    end_date = datetime.strptime(subscription["end_date"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                    current_time = datetime.now(timezone.utc)
+
+                    if current_time > end_date:
+                        # Подписка истекла, меняем статус на "Истекшая"
+                        data = {"status": "expired"}
+                        response = await client.put(f"http://subscriptions_api:8000/api/subscriptions/{subscription['id']}/", json=data)
+
+                        if response.status_code == 200:
+                            print(f"Subscription {subscription['id']} expired and status changed successfully")
+                        else:
+                            print(f"Failed to change status of subscription {subscription['id']}. Status code: {response.status_code}. Response text: {response.text}")
+
+        except Exception as e:
+            print(str(e))
+
+
+
+CELERYBEAT_SCHEDULE = {
+    'check_subscriptions_expiration_daily': {
+        'task': 'tasks.check_subscriptions_expiration',
+        'schedule': crontab(minute=25, hour=21),
+    },
+}

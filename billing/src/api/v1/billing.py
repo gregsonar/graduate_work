@@ -27,6 +27,19 @@ async def subscribe(
     print('user_data:', user_data)
     return await payment_service.create_payment(user_data.get('id'), payment_data.tariff_id)
 
+@router.post('/make_subscription',
+             summary="Создать подписку",
+             response_description="Уведомление",
+             # response_model=CreatedPaymentSchema,
+             status_code=HTTPStatus.CREATED)
+async def subscribe(
+        payment_data: CreatePaymentSchema,
+        user_data=Depends(get_current_user),
+        payment_service: BillingService = Depends(get_billing_service)
+) -> dict[str, str]:
+    print('user_data:', user_data)
+    return await payment_service.create_subscription(user_data.get('id'), payment_data.tariff_id)
+
 
 @router.get('/history',
             summary="История платежей",

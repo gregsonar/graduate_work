@@ -18,6 +18,15 @@ class SubscriptionRepository(ISubscriptionRepository):
         await self.session.refresh(subscription)
         return subscription
 
+    async def get_with_user_id(self, user_id: UUID) -> Subscription:
+        result = await self.session.execute(
+            select(Subscription).filter(Subscription.user_id == user_id)
+        )
+        subscription = result.scalar_one_or_none()
+        if not subscription:
+            raise SubscriptionNotFoundException()
+        return subscription
+
     async def get(self, subscription_id: UUID) -> Subscription:
         result = await self.session.execute(
             select(Subscription).filter(Subscription.id == subscription_id)

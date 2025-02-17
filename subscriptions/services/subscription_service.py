@@ -32,6 +32,10 @@ class SubscriptionService:
         subscription = await self.repository.get(subscription_id)
         return SubscriptionResponse.model_validate(subscription)
 
+    async def get_subscription_with_user_id(self, user_id: UUID) -> SubscriptionResponse:
+        subscription = await self.repository.get_with_user_id(user_id)
+        return SubscriptionResponse.model_validate(subscription)
+
     async def update_subscription(
         self,
         subscription_id: UUID,

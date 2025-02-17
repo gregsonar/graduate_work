@@ -1,6 +1,8 @@
+from datetime import datetime, timezone, timedelta
 from typing import Dict
 from uuid import UUID
 
+import requests
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,6 +78,45 @@ class BillingService:
                 )
             )
         return payments
+
+    async def create_subscription(self, user_id: UUID, tariff_id: UUID) -> dict[
+        str, str]:
+        tariff = await self.db_session.get(TariffModel, tariff_id)
+        if not tariff:
+            raise TariffNotFoundError
+
+        now_utc_datetime = datetime.now(tz=timezone.utc)
+        end_date = now_utc_datetime + timedelta(days=tariff.duration)
+
+        # Формируем данные для отправки
+        data = {
+            'user_id': str(user_id),
+            'plan_type': tariff.name,
+            'start_date': now_utc_datetime.isoformat(),
+            'end_date': end_date.isoformat(),
+            'price': float(tariff.price),
+        }
+        try:
+            response = requests.get(
+                url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/user/{user_id}",
+            )
+            if response.status_code == 200:
+                return {"message": "Еhe subscription already exists"}
+            elif response.status_code == 404:
+                response = requests.post(
+                    url="http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/",
+                    json=data,
+                )
+
+                if response.status_code == 200:
+                    return {"message": "Subscription created successfully"}
+            else:
+                return {
+                    "error": f"Something went wrong with the subscription API. Status code: {response.status_code}"
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
 
     async def create_payment(self, user_id: UUID, tariff_id: UUID) -> str:
 

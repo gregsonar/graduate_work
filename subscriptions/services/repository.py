@@ -69,28 +69,3 @@ class SubscriptionRepository(ISubscriptionRepository):
         # Execute query
         result = await self.session.execute(query)
         return list(result.scalars().all())
-
-    async def list_due_subscriptions(
-            self,
-            offset: int = 0,
-            limit: int = 50,
-            status=SubscriptionStatus.ACTIVE,
-            plan_type: Optional[str] = None
-    ) -> List[Subscription]:
-
-        query = select(Subscription)
-
-        # Build filter conditions
-        conditions = [status, Subscription.end_date == datetime.date.today()]
-        if plan_type:
-            conditions.append(Subscription.plan_type == plan_type)
-        query = query.filter(and_(*conditions))
-
-        # Add pagination
-        query = query.offset(offset).limit(limit)
-
-        # Execute query
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
-
-

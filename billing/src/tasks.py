@@ -7,6 +7,7 @@ from celery.schedules import crontab
 
 
 
+
 import httpx
 
 from celery import Celery, shared_task
@@ -33,101 +34,20 @@ provider = YooKassaProvider(
 )
 
 
+
 async def subscript_process(payment, tariff, response_text):
     async with httpx.AsyncClient() as client:
         try:
-            # Используем переменную для хранения URL
-            base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
-
             # Получение информации о текущей подписке
-            response = await client.get(base_url + f"user/{payment.user_id}")
+            response = await get_subscription(client, payment.user_id)
 
             # Проверка статуса ответа
-            if response.status_code == 404:
+            if response.status_code == httpx.codes.NOT_FOUND:
                 # Подписка отсутствует, создаем новую
-
-                # Получаем текущую дату и время в UTC
-                now_utc_datetime = datetime.now(timezone.utc)
-                end_date = now_utc_datetime + timedelta(days=tariff.duration)
-
-                # Данные для создания новой подписки
-                data = {
-                    'user_id': str(payment.user_id),
-                    'plan_type': tariff.name,
-                    'start_date': now_utc_datetime.isoformat(),
-                    'end_date': end_date.isoformat(),
-                    'price': float(tariff.price),
-                }
-
-                # Создание новой подписки
-                response = await client.post(base_url, json=data)
-
-                if response.status_code == 201:  # Предполагаю, что при успешном создании возвращается статус 201
-                    logger.info("Subscription created successfully")
-                else:
-                    logger.error(
-                        f"Failed to create subscription. Status code: {response.status_code}. Response text: {response.text}")
-
-            elif response.status_code == 200:
+                await create_subscription(client, payment, tariff)
+            elif response.status_code == httpx.codes.OK:
                 # Подписка существует, обновим её
-                response_data = response.json()
-
-                if response_data['status'] == 'expired':
-                    # Подписка истекла, возобновляем её
-                    data = {'status': 'active', 'plan_type': tariff.name,
-                            'end_date': (datetime.now(timezone.utc) + timedelta(
-                                days=tariff.duration)).strftime(
-                                "%Y-%m-%dT%H:%M:%SZ")}
-
-                    # Обновление подписки
-                    response = await client.put(
-                        base_url + f"{response_data['id']}", json=data)
-
-                    if response.status_code == 200:
-                        logger.info("Expired subscription renewed successfully")
-                    else:
-                        logger.error(
-                            f"Failed to renew expired subscription. Status code: {response.status_code}. Response text: {response.text}")
-
-                if response_data['status'] == 'pending':
-                    # Активируем подписку
-                    data = {'status': 'active'}
-
-                    # Обновление статуса подписки
-                    response = await client.put(
-                        base_url + f"{response_data['id']}", json=data)
-
-                    if response.status_code == 200:
-                        logger.info("Subscription activated successfully")
-                    else:
-                        logger.error(
-                            f"Failed to activate subscription. Status code: {response.status_code}. Response text: {response.text}")
-
-                elif response_data['status'] == 'active':
-                    # Получаем текущую дату и время в UTC
-                    old_end_date = datetime.strptime(
-                        response_data['end_date'], "%Y-%m-%dT%H:%M:%SZ")
-                    new_end_date = old_end_date + timedelta(
-                        days=tariff.duration)
-                    data = {
-                        'end_date': new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    }
-                    # Проверка соответствия плана подписки текущему тарифу
-                    if response_data['plan_type'] != tariff.name:
-                        # План подписки отличается от нового тарифа, необходимо обновление
-                        # Данные для обновления подписки
-                        data['plan_type'] = tariff.name
-                        # Обновление плана подписки и даты окончания
-                    response = await client.put(
-                        base_url + f"{response_data['id']}", json=data)
-
-                    if response.status_code == 200:
-                        logger.info(
-                            "Plan type and end date updated successfully")
-                    else:
-                        logger.error(
-                            f"Failed to update plan type and end date. Status code: {response.status_code}. Response text: {response.text}")
-
+                await update_subscription(client, response.json(), tariff)
             else:
                 logger.warning(
                     f"Something went wrong with the subscription API. Status code: {response.status_code}")
@@ -135,6 +55,187 @@ async def subscript_process(payment, tariff, response_text):
         except Exception as e:
             logger.exception(str(e))
             return {"error": str(e)}
+
+async def get_subscription(client, user_id):
+    # Используем переменную для хранения URL
+    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+    return await client.get(base_url + f"user/{user_id}")
+
+async def create_subscription(client, payment, tariff):
+    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+    # Получаем текущую дату и время в UTC
+    now_utc_datetime = datetime.now(timezone.utc)
+    end_date = now_utc_datetime + timedelta(days=tariff.duration)
+
+    # Данные для создания новой подписки
+    data = {
+        'user_id': str(payment.user_id),
+        'plan_type': tariff.name,
+        'start_date': now_utc_datetime.isoformat(),
+        'end_date': end_date.isoformat(),
+        'price': float(tariff.price),
+    }
+
+    # Создание новой подписки
+    response = await client.post(base_url, json=data)
+
+    if response.status_code == httpx.codes.CREATED:
+        logger.info("Subscription created successfully")
+    else:
+        logger.error(
+            f"Failed to create subscription. Status code: {response.status_code}. Response text: {response.text}")
+
+async def update_subscription(client, subscription_data, tariff):
+    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+    # Получаем текущую дату и время в UTC
+    now_utc_datetime = datetime.now(timezone.utc)
+
+    # Данные для обновления подписки
+    data = {}
+
+    # Обновление подписки в зависимости от статуса
+    if subscription_data['status'] == 'expired':
+        # Подписка истекла, возобновляем её
+        data = {
+            'status': 'active',
+            'plan_type': tariff.name,
+            'end_date': (now_utc_datetime + timedelta(days=tariff.duration)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+        log_message = "Expired subscription renewed successfully"
+    elif subscription_data['status'] == 'pending':
+        # Активируем подписку
+        data = {'status': 'active'}
+        log_message = "Subscription activated successfully"
+    elif subscription_data['status'] == 'active':
+        # Получаем текущую дату и время в UTC
+        old_end_date = datetime.strptime(subscription_data['end_date'], "%Y-%m-%dT%H:%M:%SZ")
+        new_end_date = old_end_date + timedelta(days=tariff.duration)
+        data = {
+            'end_date': new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+
+        # Проверка соответствия плана подписки текущему тарифу
+        if subscription_data['plan_type'] != tariff.name:
+            # План подписки отличается от нового тарифа, необходимо обновление
+            # Данные для обновления подписки
+            data['plan_type'] = tariff.name
+            log_message = "Plan type and end date updated successfully"
+        else:
+            log_message = "Subscription updated successfully"
+
+    # Обновление подписки
+    response = await client.put(base_url + f"{subscription_data['id']}", json=data)
+
+    # Обработка ответа
+    if response.status_code == httpx.codes.OK:
+        logger.info(log_message)
+    else:
+        logger.error(
+            f"Failed to update subscription. Status code: {response.status_code}. Response text: {response.text}")
+
+
+# async def subscript_process(payment, tariff, response_text):
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             # Используем переменную для хранения URL
+#             base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+#
+#             # Получение информации о текущей подписке
+#             response = await client.get(base_url + f"user/{payment.user_id}")
+#
+#             # Проверка статуса ответа
+#             if response.status_code == 404:
+#                 # Подписка отсутствует, создаем новую
+#
+#                 # Получаем текущую дату и время в UTC
+#                 now_utc_datetime = datetime.now(timezone.utc)
+#                 end_date = now_utc_datetime + timedelta(days=tariff.duration)
+#
+#                 # Данные для создания новой подписки
+#                 data = {
+#                     'user_id': str(payment.user_id),
+#                     'plan_type': tariff.name,
+#                     'start_date': now_utc_datetime.isoformat(),
+#                     'end_date': end_date.isoformat(),
+#                     'price': float(tariff.price),
+#                 }
+#
+#                 # Создание новой подписки
+#                 response = await client.post(base_url, json=data)
+#
+#                 if response.status_code == 201:  # Предполагаю, что при успешном создании возвращается статус 201
+#                     logger.info("Subscription created successfully")
+#                 else:
+#                     logger.error(
+#                         f"Failed to create subscription. Status code: {response.status_code}. Response text: {response.text}")
+#
+#             elif response.status_code == 200:
+#                 # Подписка существует, обновим её
+#                 response_data = response.json()
+#
+#                 if response_data['status'] == 'expired':
+#                     # Подписка истекла, возобновляем её
+#                     data = {'status': 'active', 'plan_type': tariff.name,
+#                             'end_date': (datetime.now(timezone.utc) + timedelta(
+#                                 days=tariff.duration)).strftime(
+#                                 "%Y-%m-%dT%H:%M:%SZ")}
+#
+#                     # Обновление подписки
+#                     response = await client.put(
+#                         base_url + f"{response_data['id']}", json=data)
+#
+#                     if response.status_code == 200:
+#                         logger.info("Expired subscription renewed successfully")
+#                     else:
+#                         logger.error(
+#                             f"Failed to renew expired subscription. Status code: {response.status_code}. Response text: {response.text}")
+#
+#                 if response_data['status'] == 'pending':
+#                     # Активируем подписку
+#                     data = {'status': 'active'}
+#
+#                     # Обновление статуса подписки
+#                     response = await client.put(
+#                         base_url + f"{response_data['id']}", json=data)
+#
+#                     if response.status_code == 200:
+#                         logger.info("Subscription activated successfully")
+#                     else:
+#                         logger.error(
+#                             f"Failed to activate subscription. Status code: {response.status_code}. Response text: {response.text}")
+#
+#                 elif response_data['status'] == 'active':
+#                     # Получаем текущую дату и время в UTC
+#                     old_end_date = datetime.strptime(
+#                         response_data['end_date'], "%Y-%m-%dT%H:%M:%SZ")
+#                     new_end_date = old_end_date + timedelta(
+#                         days=tariff.duration)
+#                     data = {
+#                         'end_date': new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+#                     }
+#                     # Проверка соответствия плана подписки текущему тарифу
+#                     if response_data['plan_type'] != tariff.name:
+#                         # План подписки отличается от нового тарифа, необходимо обновление
+#                         # Данные для обновления подписки
+#                         data['plan_type'] = tariff.name
+#                         # Обновление плана подписки и даты окончания
+#                     response = await client.put(
+#                         base_url + f"{response_data['id']}", json=data)
+#
+#                     if response.status_code == 200:
+#                         logger.info(
+#                             "Plan type and end date updated successfully")
+#                     else:
+#                         logger.error(
+#                             f"Failed to update plan type and end date. Status code: {response.status_code}. Response text: {response.text}")
+#
+#             else:
+#                 logger.warning(
+#                     f"Something went wrong with the subscription API. Status code: {response.status_code}")
+#
+#         except Exception as e:
+#             logger.exception(str(e))
+#             return {"error": str(e)}
 
 @celery.task(name="Check payment status & subscribe")
 def subscribe(payment_model_id, payment_id, payment_status):

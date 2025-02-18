@@ -58,7 +58,25 @@ services:
       sh -c "cd billing/src &&
              ls &&
              celery -A tasks.celery worker --loglevel=info"
-#    command: celery -A tasks.celery worker --loglevel=info
+    depends_on:
+      - billing-api
+      - redis_billing
+    env_file:
+      - billing/.env
+    networks:
+      - backend_billing
+      - subscription_network
+      - auth_network
+
+  worker_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.billing
+    container_name: celery-beat
+    command: >
+      sh -c "cd billing/src &&
+             ls &&
+             celery -A tasks.celery beat --loglevel=info"
     depends_on:
       - billing-api
       - redis_billing

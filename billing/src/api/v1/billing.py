@@ -56,7 +56,7 @@ async def history(
         user_data=Depends(get_current_user),
         payment_service: BillingService = Depends(get_billing_service),
 ) -> list[PaymentSchema]:
-    return await payment_service.get_all_payments(user_data.user_id)
+    return await payment_service.get_all_payments(user_data['id'])
 
 
 

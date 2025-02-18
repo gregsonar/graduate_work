@@ -2,8 +2,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict
 from uuid import UUID
 
+import httpx
 import requests
-from fastapi import Depends
+from fastapi import Depends, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +29,7 @@ class BillingService:
             secret_key=settings.yookassa_token,
         )
         self.db_session = db_session
+        self.client = httpx.AsyncClient()
 
     async def save_payment_in_db(
             self,
@@ -79,46 +81,7 @@ class BillingService:
             )
         return payments
 
-    async def create_subscription(self, user_id: UUID, tariff_id: UUID) -> dict[
-        str, str]:
-        tariff = await self.db_session.get(TariffModel, tariff_id)
-        if not tariff:
-            raise TariffNotFoundError
-
-        now_utc_datetime = datetime.now(tz=timezone.utc)
-        end_date = now_utc_datetime + timedelta(days=tariff.duration)
-
-        # Формируем данные для отправки
-        data = {
-            'user_id': str(user_id),
-            'plan_type': tariff.name,
-            'start_date': now_utc_datetime.isoformat(),
-            'end_date': end_date.isoformat(),
-            'price': float(tariff.price),
-        }
-        try:
-            response = requests.get(
-                url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/user/{user_id}",
-            )
-            if response.status_code == 200:
-                return {"message": "Еhe subscription already exists"}
-            elif response.status_code == 404:
-                response = requests.post(
-                    url="http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/",
-                    json=data,
-                )
-
-                if response.status_code == 200:
-                    return {"message": "Subscription created successfully"}
-            else:
-                return {
-                    "error": f"Something went wrong with the subscription API. Status code: {response.status_code}"
-                }
-
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def create_payment(self, user_id: UUID, tariff_id: UUID) -> str:
+    async def create_payment(self, user_id: UUID, tariff_id: UUID) -> CreatedPaymentSchema:
 
         tariff = await self.db_session.get(TariffModel, tariff_id)
         if not tariff:
@@ -136,6 +99,64 @@ class BillingService:
         return CreatedPaymentSchema(
             redirect_url=payment.get('confirmation').get('confirmation_url')
         )
+
+
+    async def cancel_subscription(
+            self,
+            user_id: UUID,
+            refund: bool,
+            reason: str,
+            immediate: bool,
+    ):
+        try:
+            # Получаем информацию о подписке
+            response = await self._get_subscription(user_id)
+            subscription_id = response.json()['id']
+
+            # Определяем данные для отмены подписки
+            data = {
+                "reason": reason,
+                "immediate": immediate
+            }
+
+            # Отправляем запрос на отмену подписки
+            cancel_response = await self._cancel_subscription(
+                subscription_id,
+                data,
+            )
+
+            if refund:
+                # Логика возврата средств
+                pass
+
+
+        except (KeyError, ValueError, httpx.HTTPError) as e:
+            if isinstance(e, KeyError) or isinstance(e, ValueError):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="The subscription not found",
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=str(e),
+                )
+
+    async def _get_subscription(
+            self,
+            user_id: UUID,
+    ):
+        url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/user/{user_id}"
+        response = await self.client.get(url)
+        return response
+
+    async def _cancel_subscription(
+            self,
+            subscription_id: UUID,
+            data: dict):
+        url=f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/{subscription_id}/cancel"
+        response = await self.client.post(url, json=data)
+        return response
 
 def get_billing_service(
         session: AsyncSession = Depends(get_session)

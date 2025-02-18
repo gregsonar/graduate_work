@@ -18,5 +18,5 @@ router = APIRouter()
 )
 async def get_tariffs(
         tariff_service: TariffService = Depends(get_tariff_service)
-) -> list[TariffService]:
+) -> list[TariffSchema]:
     return await tariff_service.get_active_tariffs()

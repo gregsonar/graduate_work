@@ -17,8 +17,10 @@ from auth.core.config import TokenConfig
 from auth.core.base_service import circuit_protected
 from auth.core.breaker import AsyncCircuitBreaker
 
+
 class BlacklistError(Exception):
     pass
+
 
 class TokenService:
     def __init__(self, redis_client: Redis, session: AsyncSession):
@@ -30,16 +32,11 @@ class TokenService:
             redis=redis_client,
             service_name="token_service",
             failure_threshold=3,
-            recovery_timeout=30
+            recovery_timeout=30,
         )
 
-
     async def create_access_token(
-            self,
-            user_id: UUID,
-            username: str,
-            is_superuser: bool,
-            roles: list[str]
+        self, user_id: UUID, username: str, is_superuser: bool, roles: list[str]
     ) -> Optional[str]:
         """
         Create JWT access token for user authentication.
@@ -71,13 +68,11 @@ class TokenService:
                 "exp": expire.timestamp(),
                 "iat": now.timestamp(),
                 "jti": token_id,  # Добавляем JTI
-                "token_type": "access"
+                "token_type": "access",
             }
 
             token = jwt.encode(
-                payload,
-                self.config.secret_key,
-                algorithm=self.config.algorithm
+                payload, self.config.secret_key, algorithm=self.config.algorithm
             )
 
             logger.info(
@@ -88,11 +83,12 @@ class TokenService:
             return token
 
         except Exception as e:
-            error_msg = f"Failed to create access token for user {username} (ID: {user_id})"
+            error_msg = (
+                f"Failed to create access token for user {username} (ID: {user_id})"
+            )
             logger.error(f"{error_msg}: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=error_msg
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg
             )
 
     async def create_refresh_token(self, user_id: UUID) -> Optional[str]:
@@ -120,13 +116,11 @@ class TokenService:
                 "exp": expire.timestamp(),
                 "iat": now.timestamp(),
                 "jti": token_id,
-                "token_type": "refresh"
+                "token_type": "refresh",
             }
 
             token = jwt.encode(
-                payload,
-                self.config.secret_key,
-                algorithm=self.config.algorithm
+                payload, self.config.secret_key, algorithm=self.config.algorithm
             )
 
             logger.info(
@@ -140,12 +134,13 @@ class TokenService:
             error_msg = f"Failed to create refresh token for user ID {user_id}"
             logger.error(f"{error_msg}: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=error_msg
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg
             )
 
     @circuit_protected
-    async def validate_token(self, token: str, verify_exp: bool = True) -> Optional[Dict]:
+    async def validate_token(
+        self, token: str, verify_exp: bool = True
+    ) -> Optional[Dict]:
         """
         Validate JWT token and return payload if valid.
 
@@ -167,7 +162,7 @@ class TokenService:
                 logger.warning(f"Attempt to use blacklisted token")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token has been blacklisted"
+                    detail="Token has been blacklisted",
                 )
 
             # Декодируем токен с опциональной проверкой срока действия
@@ -175,14 +170,14 @@ class TokenService:
                 "verify_signature": True,
                 "verify_exp": verify_exp,
                 "verify_iat": True,
-                "require": ["exp", "iat", "jti"]
+                "require": ["exp", "iat", "jti"],
             }
 
             payload = jwt.decode(
                 token,
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
-                options=options
+                options=options,
             )
 
             # Проверяем наличие JTI
@@ -190,7 +185,7 @@ class TokenService:
                 logger.warning("Token without JTI detected")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token format: missing JTI"
+                    detail="Invalid token format: missing JTI",
                 )
 
             logger.info(f"Token validated successfully. JTI: {payload['jti']}")
@@ -199,20 +194,18 @@ class TokenService:
         except jwt.ExpiredSignatureError as e:
             logger.warning(f"Expired token detected: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
             )
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid token detected: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token format"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format"
             )
         except jwt.PyJWTError as e:
             logger.error(f"JWT validation error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate token"
+                detail="Could not validate token",
             )
         except HTTPException as e:
             raise e
@@ -220,7 +213,7 @@ class TokenService:
             logger.error(f"Unexpected error during token validation: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Token validation failed"
+                detail="Token validation failed",
             )
 
     async def refresh_tokens(self, refresh_token: str) -> Tuple[str, str]:
@@ -229,8 +222,7 @@ class TokenService:
 
         if payload["token_type"] != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
 
         # Получаем актуальные данные пользователя из БД
@@ -239,8 +231,7 @@ class TokenService:
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
         # Помещаем использованный refresh token в черный список
@@ -252,7 +243,7 @@ class TokenService:
             user_id=user.id,
             username=user.username,
             is_superuser=user.is_superuser,
-            roles=roles
+            roles=roles,
         )
         new_refresh_token = await self.create_refresh_token(user.id)
 
@@ -276,7 +267,7 @@ class TokenService:
                 token,
                 self.config.secret_key,
                 algorithms=[self.config.algorithm],
-                options={"verify_exp": False}
+                options={"verify_exp": False},
             )
 
             # Проверяем наличие необходимых полей
@@ -294,9 +285,13 @@ class TokenService:
             # Сохраняем в Redis
             try:
                 jti = payload["jti"]
-                redis_key = f"blacklist_token:{jti}"  # Используем JTI вместо полного токена
+                redis_key = (
+                    f"blacklist_token:{jti}"  # Используем JTI вместо полного токена
+                )
 
-                logger.debug(f"Adding token with JTI {jti} to blacklist with TTL {ttl}s")
+                logger.debug(
+                    f"Adding token with JTI {jti} to blacklist with TTL {ttl}s"
+                )
                 await self.redis_client.setex(redis_key, ttl, "1")
 
                 logger.info(f"Token successfully blacklisted. JTI: {jti}, TTL: {ttl}s")
@@ -305,7 +300,7 @@ class TokenService:
                 logger.error(f"Redis error while blacklisting token: {redis_error}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to blacklist token in Redis"
+                    detail="Failed to blacklist token in Redis",
                 )
 
         except jwt.InvalidTokenError as e:
@@ -316,7 +311,7 @@ class TokenService:
             logger.error(f"Unexpected error in blacklist_token: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to process token for blacklisting"
+                detail="Failed to process token for blacklisting",
             )
 
     async def is_token_blacklisted(self, token: str) -> bool:
@@ -341,7 +336,7 @@ class TokenService:
                     token,
                     self.config.secret_key,
                     algorithms=[self.config.algorithm],
-                    options={"verify_exp": False}
+                    options={"verify_exp": False},
                 )
 
                 # Проверяем наличие JTI
@@ -370,8 +365,7 @@ class TokenService:
             error_msg = "Error checking token blacklist status"
             logger.error(f"{error_msg}: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=error_msg
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg
             )
 
     @circuit_protected
@@ -397,8 +391,7 @@ class TokenService:
             if not user:
                 logger.error(f"User not found for ID: {user_id}")
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
                 )
 
             # Подготавливаем роли пользователя
@@ -412,7 +405,7 @@ class TokenService:
                     user_id=user.id,
                     username=user.username,
                     is_superuser=user.is_superuser,
-                    roles=roles
+                    roles=roles,
                 )
 
                 # Создаем refresh token
@@ -433,7 +426,7 @@ class TokenService:
                 )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create authentication tokens"
+                    detail="Failed to create authentication tokens",
                 )
 
         except HTTPException:
@@ -443,8 +436,7 @@ class TokenService:
             error_msg = f"Unexpected error during token creation for user ID {user_id}"
             logger.error(f"{error_msg}: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=error_msg
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg
             )
 
     async def get_current_user(self, token: str) -> Optional[Dict]:
@@ -463,5 +455,5 @@ class TokenService:
             "id": user.id,
             "username": user.username,
             "is_superuser": user.is_superuser,
-            "roles": [role.name for role in user.roles]
+            "roles": [role.name for role in user.roles],
         }

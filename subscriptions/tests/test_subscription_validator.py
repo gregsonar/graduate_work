@@ -2,10 +2,7 @@ import pytest
 from datetime import datetime, timedelta, UTC
 from subscriptions.services.validator import SubscriptionValidator
 from subscriptions.models.subscription import SubscriptionStatus
-from subscriptions.core.exceptions import (
-    InvalidStatusTransitionException
-)
-
+from subscriptions.core.exceptions import InvalidStatusTransitionException
 
 
 class TestSubscriptionValidator:
@@ -13,8 +10,7 @@ class TestSubscriptionValidator:
     async def test_valid_status_transition(self):
         validator = SubscriptionValidator()
         result = await validator.validate_status_transition(
-            SubscriptionStatus.ACTIVE,
-            SubscriptionStatus.SUSPENDED
+            SubscriptionStatus.ACTIVE, SubscriptionStatus.SUSPENDED
         )
         assert result is True
 
@@ -23,8 +19,7 @@ class TestSubscriptionValidator:
         validator = SubscriptionValidator()
         with pytest.raises(InvalidStatusTransitionException):
             await validator.validate_status_transition(
-                SubscriptionStatus.CANCELLED,
-                SubscriptionStatus.ACTIVE
+                SubscriptionStatus.CANCELLED, SubscriptionStatus.ACTIVE
             )
 
     @pytest.mark.asyncio

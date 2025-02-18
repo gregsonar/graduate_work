@@ -11,6 +11,7 @@ from starlette.responses import Response
 @dataclass
 class AuthConfig:
     """Configuration for authentication middleware"""
+
     secret_key: str
     public_paths: List[str] = None
     token_prefix: str = "Bearer"
@@ -26,11 +27,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
             "/docs",
             "/redoc",
-            "/health"
+            "/health",
         ]
 
     async def dispatch(
-            self, request: Request, call_next: RequestResponseEndpoint
+        self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         # Get the full path including scope's root_path
         root_path = request.scope.get("root_path", "").rstrip("/")
@@ -55,52 +56,39 @@ class AuthMiddleware(BaseHTTPMiddleware):
             auth_header = request.headers.get("Authorization")
             if not auth_header:
                 raise HTTPException(
-                    status_code=401,
-                    detail="Missing authentication header"
+                    status_code=401, detail="Missing authentication header"
                 )
 
             # Validate token format
             if not auth_header.startswith(self.config.token_prefix):
                 raise HTTPException(
                     status_code=401,
-                    detail=f"Invalid token format. Must start with '{self.config.token_prefix}'"
+                    detail=f"Invalid token format. Must start with '{self.config.token_prefix}'",
                 )
 
             # Extract and verify token
             token = auth_header.replace(f"{self.config.token_prefix} ", "")
             try:
                 payload = jwt.decode(
-                    token,
-                    self.config.secret_key,
-                    algorithms=[self.config.algorithm]
+                    token, self.config.secret_key, algorithms=[self.config.algorithm]
                 )
 
                 # Check token expiration
                 exp = payload.get("exp")
                 if exp and datetime.utcnow().timestamp() > exp:
-                    raise HTTPException(
-                        status_code=401,
-                        detail="Token has expired"
-                    )
+                    raise HTTPException(status_code=401, detail="Token has expired")
 
                 # Add decoded payload to request state
                 request.state.user = payload
 
             except jwt.InvalidTokenError:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid token"
-                )
+                raise HTTPException(status_code=401, detail="Invalid token")
 
             return await call_next(request)
 
         except HTTPException as e:
-            return JSONResponse(
-                status_code=e.status_code,
-                content={"detail": e.detail}
-            )
+            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
         except Exception as e:
             return JSONResponse(
-                status_code=500,
-                content={"detail": "Internal server error"}
+                status_code=500, content={"detail": "Internal server error"}
             )

@@ -32,10 +32,7 @@ class BaseRepository(Generic[ModelType]):
         return result.scalar_one_or_none()
 
     async def get_all(
-        self,
-        load_related: bool = False,
-        skip: int = 0,
-        limit: int = 100
+        self, load_related: bool = False, skip: int = 0, limit: int = 100
     ) -> List[ModelType]:
         stmt = select(self.model).offset(skip).limit(limit)
         if load_related:
@@ -50,9 +47,7 @@ class BaseRepository(Generic[ModelType]):
         await self.session.refresh(obj)
         return obj
 
-    async def update(
-        self, obj_id: UUID, data: Dict[str, Any]
-    ) -> Optional[ModelType]:
+    async def update(self, obj_id: UUID, data: Dict[str, Any]) -> Optional[ModelType]:
         stmt = (
             update(self.model)
             .where(self.model.id == obj_id)
@@ -74,18 +69,12 @@ class BaseRepository(Generic[ModelType]):
         filters: Dict[str, Any],
         load_related: bool = False,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[ModelType]:
         conditions = [
-            getattr(self.model, key) == value
-            for key, value in filters.items()
+            getattr(self.model, key) == value for key, value in filters.items()
         ]
-        stmt = (
-            select(self.model)
-            .where(and_(*conditions))
-            .offset(skip)
-            .limit(limit)
-        )
+        stmt = select(self.model).where(and_(*conditions)).offset(skip).limit(limit)
         if load_related:
             stmt = stmt.options(selectinload("*"))
         result = await self.session.execute(stmt)
@@ -98,8 +87,7 @@ class BaseRepository(Generic[ModelType]):
 
             if filters:
                 conditions = [
-                    getattr(self.model, key) == value
-                    for key, value in filters.items()
+                    getattr(self.model, key) == value for key, value in filters.items()
                 ]
                 stmt = stmt.where(and_(*conditions))
 
@@ -153,12 +141,7 @@ class RoleRepository(BaseRepository[Role]):
         stmt = (
             select(self.model)
             .options(selectinload(self.model.users))  # Всегда загружаем пользователей
-            .where(
-                and_(
-                    self.model.is_active == True,
-                    self.model.is_deleted == False
-                )
-            )
+            .where(and_(self.model.is_active == True, self.model.is_deleted == False))
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
@@ -179,7 +162,7 @@ class UserRoleRepository(BaseRepository[UserRole]):
         user_role_data = {
             "user_id": user_id,
             "role_id": role_id,
-            "assigned_by": assigned_by
+            "assigned_by": assigned_by,
         }
         return await self.create(user_role_data)
 
@@ -202,38 +185,33 @@ class AccessLogRepository(BaseRepository[AccessLog]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-
     async def create_log(
         self, user_id: Mapped[UUID], ip_address: str, user_agent: str
     ) -> AccessLog:
         log_data = {
             "user_id": user_id,
             "ip_address": ip_address,
-            "user_agent": user_agent
+            "user_agent": user_agent,
         }
         return await self.create(log_data)
+
 
 class SocialAccountRepository(BaseRepository[UserSocialAccount]):
     def __init__(self, session: AsyncSession):
         super().__init__(UserSocialAccount, session)
 
     async def get_by_provider_and_social_id(
-        self,
-        provider: SocialProvider,
-        social_id: str
+        self, provider: SocialProvider, social_id: str
     ) -> Optional[UserSocialAccount]:
         """Получение социального аккаунта по провайдеру и social_id"""
         stmt = select(self.model).where(
-            self.model.provider == provider,
-            self.model.social_id == social_id
+            self.model.provider == provider, self.model.social_id == social_id
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_user_accounts(
-        self,
-        user_id: UUID,
-        provider: Optional[SocialProvider] = None
+        self, user_id: UUID, provider: Optional[SocialProvider] = None
     ) -> List[UserSocialAccount]:
         """Получение всех социальных аккаунтов пользователя"""
         stmt = select(self.model).where(self.model.user_id == user_id)
@@ -242,14 +220,10 @@ class SocialAccountRepository(BaseRepository[UserSocialAccount]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_primary_account(
-        self,
-        user_id: UUID
-    ) -> Optional[UserSocialAccount]:
+    async def get_primary_account(self, user_id: UUID) -> Optional[UserSocialAccount]:
         """Получение основного социального аккаунта пользователя"""
         stmt = select(self.model).where(
-            self.model.user_id == user_id,
-            self.model.is_primary == True
+            self.model.user_id == user_id, self.model.is_primary == True
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

@@ -11,7 +11,7 @@ load_dotenv()
 # Инициализация провайдера с тестовыми данными
 provider = YooKassaProvider(
     account_id=os.getenv("YOOKASSA_SHOP_ID", "1234567"),
-    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123")
+    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123"),
 )
 
 
@@ -26,13 +26,13 @@ def simulate_webhook(payment_id: str, event: str):
         "event": event,
         "object": {
             "id": payment_id,
-            "status": event.split('.')[-1],
+            "status": event.split(".")[-1],
             "amount": {"value": "100.00", "currency": "RUB"},
             "metadata": {"order_id": "123"},
-            "confirmation": {"confirmation_url": "https://example.com"}
-        }
+            "confirmation": {"confirmation_url": "https://example.com"},
+        },
     }
-    provider.handle_webhook(webhook_data['event'], webhook_data['object'])
+    provider.handle_webhook(webhook_data["event"], webhook_data["object"])
 
 
 def demo_successful_payment():
@@ -45,44 +45,44 @@ def demo_successful_payment():
         payment = provider.create_payment(
             amount=100.00,
             description="Успешный тестовый платеж",
-            metadata={ # https://yookassa.ru/developers/api#create_payment_metadata
+            metadata={  # https://yookassa.ru/developers/api#create_payment_metadata
                 "some_key": "some_value",
-                "order_id": "123"
+                "order_id": "123",
             },
-            idempotence_key=idempotence_key
+            idempotence_key=idempotence_key,
         )
 
-        current_status = payment['status']
-        if current_status == 'pending':
+        current_status = payment["status"]
+        if current_status == "pending":
             print("Создан платеж:")
             pprint(payment)
 
         while True:
-            input('Платёж произведён?')
-            payment = provider.get_payment(payment['id'])
-            current_status = payment['status']
+            input("Платёж произведён?")
+            payment = provider.get_payment(payment["id"])
+            current_status = payment["status"]
             print(f"Статус платежа: {current_status}")
-            if current_status == 'waiting_for_capture':
+            if current_status == "waiting_for_capture":
                 print("\nПроизводим принятие платежа:")
-                capture = provider.capture_payment(payment['id'])
+                capture = provider.capture_payment(payment["id"])
                 pprint(capture)
-                current_status = capture['status']
-            if current_status == 'succeeded':
+                current_status = capture["status"]
+            if current_status == "succeeded":
                 print("Платёж успешно проведён")
                 break
-            elif current_status == 'pending':
+            elif current_status == "pending":
                 print("Платёж в обработке (pending).")
-            elif current_status == 'canceled':
+            elif current_status == "canceled":
                 print("Платёж отклонён (canceled)!")
                 break
             else:
-                raise PaymentCaptureError('Ошибка принятия платежа')
+                raise PaymentCaptureError("Ошибка принятия платежа")
 
     except PaymentCreationError as e:
         print(f"Ошибка: {e}")
 
     except (MaxRetryError, TimeoutError) as network_error:
-        print(f'Проблемы с сетью: {network_error}')
+        print(f"Проблемы с сетью: {network_error}")
 
 
 def demo_cancelled_by_shop_payment():
@@ -98,28 +98,28 @@ def demo_cancelled_by_shop_payment():
             description="Успешный тестовый платеж",
             metadata={  # https://yookassa.ru/developers/api#create_payment_metadata
                 "some_key": "some_value",
-                "order_id": "123"
+                "order_id": "123",
             },
-            idempotence_key=idempotence_key
+            idempotence_key=idempotence_key,
         )
 
-        current_status = payment['status']
-        if current_status == 'pending':
+        current_status = payment["status"]
+        if current_status == "pending":
             print("Создан платеж:")
             pprint(payment)
 
         while True:
-            input('Платёж произведён?')
-            payment = provider.get_payment(payment['id'])
-            current_status = payment['status']
+            input("Платёж произведён?")
+            payment = provider.get_payment(payment["id"])
+            current_status = payment["status"]
             print(f"Статус платежа: {current_status}")
-            if current_status == 'waiting_for_capture':
+            if current_status == "waiting_for_capture":
                 print("\nПроизводим отмену платежа:")
-                cancel = provider.cancel_payment(payment['id'])
+                cancel = provider.cancel_payment(payment["id"])
                 pprint(cancel)
-                current_status = cancel['status']
+                current_status = cancel["status"]
 
-            if current_status == 'canceled':
+            if current_status == "canceled":
                 print("Платёж отклонён (canceled)!")
                 break
 
@@ -127,7 +127,7 @@ def demo_cancelled_by_shop_payment():
         print(f"Ошибка: {e}")
 
     except (MaxRetryError, TimeoutError) as network_error:
-        print(f'Проблемы с сетью: {network_error}')
+        print(f"Проблемы с сетью: {network_error}")
 
 
 def demo_idempotency():
@@ -138,16 +138,12 @@ def demo_idempotency():
     try:
         # Первый запрос
         payment1 = provider.create_payment(
-            amount=100.00,
-            description="Тест идемпотентности",
-            idempotence_key=key
+            amount=100.00, description="Тест идемпотентности", idempotence_key=key
         )
 
         # Повторный запрос с тем же ключом
         payment2 = provider.create_payment(
-            amount=100.00,
-            description="Тест идемпотентности",
-            idempotence_key=key
+            amount=100.00, description="Тест идемпотентности", idempotence_key=key
         )
 
         print("Результаты должны быть идентичны:")

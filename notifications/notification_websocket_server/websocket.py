@@ -7,8 +7,8 @@ import asyncpg
 from typing import Dict, Optional
 import websockets
 
-from settings.extensions import logger
-from settings.config import (
+from notifications.notification_websocket_server.settings.extensions import logger
+from notifications.notification_websocket_server.settings.config import (
     RABBIT_HOST,
     RABBIT_USER,
     RABBIT_PASS,
@@ -26,25 +26,23 @@ class WrongUserCredentials(BaseException):
         self._e = e
 
     def __str__(self):
-        return f'Cannot recognise user credentials. detail: {self._e}'
+        return f"Cannot recognise user credentials. detail: {self._e}"
 
 
 async def connect(websocket: websockets.WebSocketServerProtocol) -> uuid.UUID:
     try:
         data = await websocket.recv()
-        user_id = uuid.UUID(data.replace('\n', ''))
+        user_id = uuid.UUID(data.replace("\n", ""))
     except ValueError as e:
-        logger.error('Wrong uuid format for user id %s', data)
+        logger.error("Wrong uuid format for user id %s", data)
         raise WrongUserCredentials(e)
 
     USERS[user_id] = websocket
-    await websocket.send('OK')
+    await websocket.send("OK")
     return user_id
 
 
-async def receiver(
-    websocket: websockets.WebSocketServerProtocol, path: str
-) -> None:
+async def receiver(websocket: websockets.WebSocketServerProtocol, path: str) -> None:
     user_id: Optional[uuid.UUID] = None
     try:
         user_id = await connect(websocket)
@@ -53,16 +51,16 @@ async def receiver(
         await websocket.send(str(e))
     finally:
         await unregister(user_id)
-        await websocket.send('Connection closed.')
+        await websocket.send("Connection closed.")
 
 
 async def handle_user_messages(user_id: uuid.UUID):
 
     connection = await aio_pika.connect_robust(
-        f'amqp://{RABBIT_USER}:{RABBIT_PASS}@{RABBIT_HOST}/', loop=loop
+        f"amqp://{RABBIT_USER}:{RABBIT_PASS}@{RABBIT_HOST}/", loop=loop
     )
 
-    user_queue = f'{RABBIT_USER_INSTANT_MESSAGE_QUEUE}.{user_id}'
+    user_queue = f"{RABBIT_USER_INSTANT_MESSAGE_QUEUE}.{user_id}"
 
     async for message in rabbit_messages(connection, user_queue):
         text_message = message.body
@@ -89,7 +87,7 @@ async def proceed_websocket_message(user_id: uuid.UUID, text_message: str):
 
 async def save_to_db(user_id: uuid.UUID, message: str) -> None:
     with await asyncpg.connect(**MESSAGES_DSL) as conn:
-        query = f'INSERT INTO notification_messages (id, user_id, message) VALUES (%s, %s, %s)'
+        query = f"INSERT INTO notification_messages (id, user_id, message) VALUES (%s, %s, %s)"
         await conn.execute(query, (str(uuid.uuid4()), str(user_id), message))
 
 
@@ -99,7 +97,7 @@ async def unregister(user_id: Optional[uuid.UUID]):
     _ = USERS.pop(user_id)
 
 
-ws_server = websockets.serve(receiver, '0.0.0.0', 8765)
+ws_server = websockets.serve(receiver, "0.0.0.0", 8765)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(ws_server)

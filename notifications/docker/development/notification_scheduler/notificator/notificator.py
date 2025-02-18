@@ -21,9 +21,7 @@ class Notificator:
     def start_listening(self) -> None:
         credentials = pika.PlainCredentials(self.rabbit_user, self.rabbit_pass)
         connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=self.rabbit_host, credentials=credentials
-            )
+            pika.ConnectionParameters(host=self.rabbit_host, credentials=credentials)
         )
         channel = connection.channel()
         channel.queue_declare(queue=self.queue_name, durable=True)

@@ -13,7 +13,7 @@ class RequestTracker:
         self.logger = getLogger(__name__)
 
     def get_or_generate_request_id(self, request: Request) -> str:
-        request_id = request.headers.get('X-Request-Id')
+        request_id = request.headers.get("X-Request-Id")
         if not request_id:
             request_id = str(uuid4())
         return request_id
@@ -23,9 +23,9 @@ class RequestTracker:
         context = self.propagator.extract(carrier=dict(request.headers))
 
         with self.tracer.start_as_current_span(
-                f"{request.method} {request.url.path}",
-                context=context,
-                kind=trace.SpanKind.SERVER,
+            f"{request.method} {request.url.path}",
+            context=context,
+            kind=trace.SpanKind.SERVER,
         ) as span:
             span.set_attribute("request_id", request_id)
             span.set_attribute("http.method", request.method)

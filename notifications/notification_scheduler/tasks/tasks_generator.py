@@ -21,10 +21,10 @@ def get_all_timetable() -> dict:
     with psycopg2.connect(
         **DSL, cursor_factory=RealDictCursor
     ) as conn, conn.cursor() as cursor:
-        query = f'SELECT id, min, h, day, month, week_day  FROM {TIME_TABLE}'
+        query = f"SELECT id, min, h, day, month, week_day  FROM {TIME_TABLE}"
         cursor.execute(query)
         all_tasks = [TimeTable(**record) for record in cursor]
-        logger.info(f'get data: %s', len(all_tasks))
+        logger.info(f"get data: %s", len(all_tasks))
     if not all_tasks:
         return {}
 
@@ -34,6 +34,6 @@ def get_all_timetable() -> dict:
 def add_periodic_task(app: Celery, task: Task, timetable: TimeTable) -> str:
     schedule = crontab(**timetable.cron_dict())
     task_id = app.add_periodic_task(
-        schedule, task.s(timetable.id), options={'queue': 'gen_messages'}
+        schedule, task.s(timetable.id), options={"queue": "gen_messages"}
     )
     return task_id

@@ -1,6 +1,7 @@
 import pytest
 from async_fastapi_jwt_auth import AuthJWT
 
+
 def test_authorize_fixture(authorize: AuthJWT):
     # Проверяем, что объект AuthJWT был корректно создан
     assert isinstance(authorize, AuthJWT)

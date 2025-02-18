@@ -24,12 +24,12 @@ def prep_conn(queue_name: str) -> (BlockingConnection, BlockingChannel):
     return connection, channel
 
 
-def send_message_to_queue(message: 'EmailMessage') -> None:
+def send_message_to_queue(message: "EmailMessage") -> None:
     connection, channel = prep_conn(queue_name=RABBIT_RULE_MESSAGE_QUEUE)
     channel.basic_publish(
-        exchange='',
+        exchange="",
         routing_key=RABBIT_RULE_MESSAGE_QUEUE,
-        body=message.serialize('utf-8'),
+        body=message.serialize("utf-8"),
         properties=pika.BasicProperties(delivery_mode=2),
     )
     connection.close()
@@ -37,15 +37,15 @@ def send_message_to_queue(message: 'EmailMessage') -> None:
 
 @dataclass
 class EmailMessage:
-    user: 'User'
+    user: "User"
     subject: str
     body: str
 
-    def serialize(self, encoding: str = 'utf-8') -> bytes:
+    def serialize(self, encoding: str = "utf-8") -> bytes:
         return json.dumps(
             {
-                'user': self.user.to_dict(),
-                'subject': self.subject,
-                'body': self.body,
+                "user": self.user.to_dict(),
+                "subject": self.subject,
+                "body": self.body,
             }
         ).encode(encoding)

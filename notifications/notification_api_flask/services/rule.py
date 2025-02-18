@@ -66,9 +66,7 @@ def get_all_rules() -> List[DatabaseRule]:
     return DatabaseRule.query.all()
 
 
-def _get_timetable(
-    timetable_data: TimeTable, session: Session
-) -> DatabaseTimeTable:
+def _get_timetable(timetable_data: TimeTable, session: Session) -> DatabaseTimeTable:
 
     timetable = DatabaseTimeTable.query.filter_by(
         min=timetable_data.min,
@@ -79,7 +77,7 @@ def _get_timetable(
     ).first()
 
     if timetable is None:
-        logger.info('Creating new time record %s', timetable_data)
+        logger.info("Creating new time record %s", timetable_data)
         timetable = DatabaseTimeTable(
             key=timetable_data.key,
             min=timetable_data.min,

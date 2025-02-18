@@ -7,7 +7,11 @@ from uuid import UUID, uuid4
 import requests
 from yookassa import Configuration, Payment
 
-from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
+from payments.exceptions import (
+    PaymentCreationError,
+    PaymentCaptureError,
+    PaymentStatusError,
+)
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
 
 
@@ -20,30 +24,30 @@ class YooKassaProvider:
         return str(uuid4())
 
     def create_payment(
-            self,
-            amount: float,
-            currency: str = "RUB",
-            description: str = "",
-            metadata: Optional[Dict] = None,
-            capture: bool = False,
-            idempotence_key: Optional[UUID] = None
+        self,
+        amount: float,
+        currency: str = "RUB",
+        description: str = "",
+        metadata: Optional[Dict] = None,
+        capture: bool = False,
+        idempotence_key: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         try:
             idempotence_key = idempotence_key or self._generate_idempotence_key()
 
-            payment = Payment.create({
-                "amount": {
-                    "value": amount,
-                    "currency": currency
+            payment = Payment.create(
+                {
+                    "amount": {"value": amount, "currency": currency},
+                    "confirmation": {
+                        "type": "redirect",
+                        "return_url": "https://your-service.com/return",  # todo: добавить в .env
+                    },
+                    "capture": capture,
+                    "description": description,
+                    "metadata": metadata or {},
                 },
-                "confirmation": {
-                    "type": "redirect",
-                    "return_url": "https://your-service.com/return"  # todo: добавить в .env
-                },
-                "capture": capture,
-                "description": description,
-                "metadata": metadata or {}
-            }, idempotence_key)
+                idempotence_key,
+            )
 
             # Преобразуем JSON-строку в словарь
             payment_data = json.loads(payment.json())
@@ -63,30 +67,24 @@ class YooKassaProvider:
         except Exception as e:
             raise PaymentStatusError(f"Failed to get payment status: {str(e)}")
 
-    def cancel_payment(self,
-            payment_id: str,
-            idempotence_key: Optional[UUID] = None):
+    def cancel_payment(self, payment_id: str, idempotence_key: Optional[UUID] = None):
         try:
-            payment_to_cancel = Payment.cancel(payment_id=payment_id,
-                                               idempotency_key=idempotence_key)
+            payment_to_cancel = Payment.cancel(
+                payment_id=payment_id, idempotency_key=idempotence_key
+            )
 
             return payment_to_cancel
         except Exception as e:
             raise e
 
-
     def capture_payment(
-            self,
-            payment_id: str,
-            idempotence_key: Optional[UUID] = None
+        self, payment_id: str, idempotence_key: Optional[UUID] = None
     ) -> Dict[str, Any]:
         try:
             idempotence_key = idempotence_key or self._generate_idempotence_key()
 
             payment = Payment.capture(
-                payment_id,
-                None,  # Полный захват суммы
-                idempotence_key
+                payment_id, None, idempotence_key  # Полный захват суммы
             )
 
             # Преобразуем JSON-строку в словарь
@@ -98,10 +96,10 @@ class YooKassaProvider:
 
     def handle_webhook(self, event: str, data: dict):
         handlers = {
-            'payment.succeeded': self._handle_payment_succeeded,
-            'payment.canceled': self._handle_payment_canceled,
-            'payment.waiting_for_capture': self._handle_waiting_capture,
-            'refund.succeeded': self._handle_refund_succeeded
+            "payment.succeeded": self._handle_payment_succeeded,
+            "payment.canceled": self._handle_payment_canceled,
+            "payment.waiting_for_capture": self._handle_waiting_capture,
+            "refund.succeeded": self._handle_refund_succeeded,
         }
 
         if handler := handlers.get(event):
@@ -114,20 +112,20 @@ class YooKassaProvider:
 
     def _handle_payment_succeeded(self, data: dict):
         # Обновляем статус платежа в вашей системе
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'succeeded')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "succeeded")
 
     def _handle_payment_canceled(self, data: dict):
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'canceled')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "canceled")
 
     def _handle_waiting_capture(self, data: dict):
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'waiting_for_capture')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "waiting_for_capture")
 
     def _handle_refund_succeeded(self, data: dict):
-        refund_id = data['id']
-        payment_id = data['payment_id']
+        refund_id = data["id"]
+        payment_id = data["payment_id"]
         self._process_refund(refund_id, payment_id)
 
     def _update_payment_status(self, payment_id: str, status: str):

@@ -2,12 +2,13 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+
 class AmountSchema(BaseModel):
     value: str
     currency: str
 
 
-class YooKassaPaymentSchema(BaseModel, extra='allow'):
+class YooKassaPaymentSchema(BaseModel, extra="allow"):
     id: str
     status: str
     amount: AmountSchema

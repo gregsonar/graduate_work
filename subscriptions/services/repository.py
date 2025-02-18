@@ -7,6 +7,7 @@ from subscriptions.models.subscription import Subscription, SubscriptionStatus
 from subscriptions.services.interfaces import ISubscriptionRepository
 from subscriptions.core.exceptions import SubscriptionNotFoundException
 
+
 class SubscriptionRepository(ISubscriptionRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -36,12 +37,12 @@ class SubscriptionRepository(ISubscriptionRepository):
         return subscription
 
     async def list_subscriptions(
-            self,
-            offset: int = 0,
-            limit: int = 50,
-            user_id: Optional[UUID] = None,
-            status: Optional[SubscriptionStatus] = None,
-            plan_type: Optional[str] = None
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        user_id: Optional[UUID] = None,
+        status: Optional[SubscriptionStatus] = None,
+        plan_type: Optional[str] = None,
     ) -> List[Subscription]:
 
         query = select(Subscription)

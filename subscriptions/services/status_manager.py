@@ -16,29 +16,26 @@ class SubscriptionStatusManager(ISubscriptionStatusManager):
     async def suspend(self, subscription_id: UUID, reason: str) -> None:
         subscription = await self.repository.get(subscription_id)
         await self.validator.validate_status_transition(
-            subscription.status,
-            SubscriptionStatus.SUSPENDED
+            subscription.status, SubscriptionStatus.SUSPENDED
         )
-        await self.repository.update(subscription_id, {
-            'status': SubscriptionStatus.SUSPENDED
-        })
+        await self.repository.update(
+            subscription_id, {"status": SubscriptionStatus.SUSPENDED}
+        )
 
     async def resume(self, subscription_id: UUID, comment: str | None) -> None:
         subscription = await self.repository.get(subscription_id)
         await self.validator.validate_status_transition(
-            subscription.status,
-            SubscriptionStatus.ACTIVE
+            subscription.status, SubscriptionStatus.ACTIVE
         )
-        await self.repository.update(subscription_id, {
-            'status': SubscriptionStatus.ACTIVE
-        })
+        await self.repository.update(
+            subscription_id, {"status": SubscriptionStatus.ACTIVE}
+        )
 
     async def cancel(self, subscription_id: UUID, reason: str, immediate: bool) -> None:
         subscription = await self.repository.get(subscription_id)
         await self.validator.validate_status_transition(
-            subscription.status,
-            SubscriptionStatus.CANCELED
+            subscription.status, SubscriptionStatus.CANCELED
         )
-        await self.repository.update(subscription_id, {
-            'status': SubscriptionStatus.CANCELED
-        })
+        await self.repository.update(
+            subscription_id, {"status": SubscriptionStatus.CANCELED}
+        )

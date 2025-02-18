@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from dotenv import load_dotenv
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from auth.core.config import config as cf
 from auth.models.user import User

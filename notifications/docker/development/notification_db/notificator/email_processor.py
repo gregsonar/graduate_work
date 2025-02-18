@@ -40,14 +40,12 @@ class EmaiMessageProcessor:
         templ = template_env.get_template(template)
         return templ.render(**kwargs)
 
-    def send_email(
-        self, to: str, sender: str, subject: str, body: str
-    ) -> None:
-        msg = MIMEMultipart('alternative')
-        msg['From'] = sender
-        msg['Subject'] = subject
-        msg['To'] = to
-        msg.attach(MIMEText(body, 'html'))
+    def send_email(self, to: str, sender: str, subject: str, body: str) -> None:
+        msg = MIMEMultipart("alternative")
+        msg["From"] = sender
+        msg["Subject"] = subject
+        msg["To"] = to
+        msg.attach(MIMEText(body, "html"))
         server = smtplib.SMTP(self.mailer_host, self.mailer_port)
         server.login(self.mailer_user, self.mailer_pass)
         try:
@@ -60,8 +58,8 @@ class EmaiMessageProcessor:
     def save_to_db(self, user_id: str, message: str) -> None:
         with psycopg2.connect(**self.dsl) as conn, conn.cursor() as cursor:
             query = (
-                f'INSERT INTO {self.message_table_name} (id, user_id, message)'
-                f' VALUES (%s, %s, %s)'
+                f"INSERT INTO {self.message_table_name} (id, user_id, message)"
+                f" VALUES (%s, %s, %s)"
             )
             cursor.execute(query, (str(uuid.uuid4()), user_id, message))
 
@@ -69,12 +67,12 @@ class EmaiMessageProcessor:
         user = json.loads(body)
         html = self.render_template(
             self.template_name,
-            first_name=user.get('first_name') or '',
-            last_name=user.get('last_name') or '',
+            first_name=user.get("first_name") or "",
+            last_name=user.get("last_name") or "",
         )
         sender = self.sender_email
         subject = self.subject
-        email = user.get('email')
+        email = user.get("email")
         if email:
-            self.send_email(user['email'], sender, subject, html)
-            self.save_to_db(user_id=user['id'], message=subject)
+            self.send_email(user["email"], sender, subject, html)
+            self.save_to_db(user_id=user["id"], message=subject)

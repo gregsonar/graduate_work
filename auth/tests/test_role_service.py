@@ -34,7 +34,9 @@ class TestRoleService:
         # Assert
         assert result is True
         role_service.get_by_id.assert_awaited_once_with(role_id)
-        role_service.user_role_repository.assign_role.assert_awaited_once_with(user_id, role_id)
+        role_service.user_role_repository.assign_role.assert_awaited_once_with(
+            user_id, role_id
+        )
 
     async def test_give_role_to_user_role_not_found(self, mock_session):
         # Arrange
@@ -50,7 +52,9 @@ class TestRoleService:
         assert result is False
         role_service.get_by_id.assert_awaited_once_with(role_id)
 
-    async def test_get_all_users_with_roles_success(self, mock_session, mock_role, mock_user):
+    async def test_get_all_users_with_roles_success(
+        self, mock_session, mock_role, mock_user
+    ):
         # Arrange
         role_service = RoleService(mock_session)
         role_id = mock_role.id
@@ -108,7 +112,9 @@ class TestRoleService:
         # Assert
         assert result is False
 
-    async def test_give_role_to_user_already_has_role(self, mock_session, mock_role, mock_user, mock_user_role):
+    async def test_give_role_to_user_already_has_role(
+        self, mock_session, mock_role, mock_user, mock_user_role
+    ):
         # Arrange
         role_service = RoleService(mock_session)
         user_id = mock_user.id
@@ -121,11 +127,10 @@ class TestRoleService:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Создаем existing_user_role с теми же role_id и user_id
-        existing_user_role = UserRole(
-            user_id=user_id,
-            role_id=role_id
+        existing_user_role = UserRole(user_id=user_id, role_id=role_id)
+        role_service.user_role_repository.get_user_roles = AsyncMock(
+            return_value=[existing_user_role]
         )
-        role_service.user_role_repository.get_user_roles = AsyncMock(return_value=[existing_user_role])
         role_service.user_role_repository.assign_role = AsyncMock()
 
         # Act
@@ -136,7 +141,9 @@ class TestRoleService:
         # Проверяем, что assign_role не вызывался
         role_service.user_role_repository.assign_role.assert_not_awaited()
 
-    async def test_get_all_users_with_roles_success(self, mock_session, mock_role, mock_user):
+    async def test_get_all_users_with_roles_success(
+        self, mock_session, mock_role, mock_user
+    ):
         # Arrange
         role_service = RoleService(mock_session)
         role_id = mock_role.id
@@ -160,7 +167,9 @@ class TestRoleService:
         assert result == expected_users
         role_service.get_by_id.assert_awaited_once_with(role_id)
 
-    async def test_give_role_to_user_exception(self, mock_session, mock_role, mock_user):
+    async def test_give_role_to_user_exception(
+        self, mock_session, mock_role, mock_user
+    ):
         # Arrange
         role_service = RoleService(mock_session)
         user_id = mock_user.id

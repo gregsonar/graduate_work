@@ -4,13 +4,17 @@ from typing import List, Optional
 from datetime import datetime
 from .entity import BaseResponse
 
+
 class UserBrief(BaseResponse):
     """Brief user information for nested responses."""
+
     id: UUID4 = Field(..., description="User's unique identifier")
     username: str = Field(..., description="Username", min_length=1, max_length=50)
 
+
 class RoleResponse(BaseResponse):
     """Complete role information response model."""
+
     id: UUID4 = Field(..., description="Role's unique identifier")
     name: str = Field(..., description="Role name", min_length=1, max_length=100)
     description: Optional[str] = Field(None, description="Role description")
@@ -34,14 +38,16 @@ class RoleResponse(BaseResponse):
                 "users": [
                     {
                         "id": "123e4567-e89b-12d3-a456-426614174000",
-                        "username": "john_doe"
+                        "username": "john_doe",
                     }
-                ]
+                ],
             }
         }
 
+
 class RoleListResponse(BaseResponse):
     """Paginated role list response."""
+
     items: List[RoleResponse] = Field(..., description="List of roles")
     total: int = Field(..., description="Total record count", ge=0)
     page: int = Field(..., description="Current page number", ge=1)
@@ -62,28 +68,36 @@ class RoleListResponse(BaseResponse):
                         "users": [
                             {
                                 "id": "123e4567-e89b-12d3-a456-426614174000",
-                                "username": "john_doe"
+                                "username": "john_doe",
                             }
-                        ]
+                        ],
                     }
                 ],
                 "total": 100,
                 "page": 1,
-                "size": 10
+                "size": 10,
             }
         }
 
+
 class UserRoleAssignment(BaseModel):
     """Role assignment schema."""
-    user_ids: List[uuid.UUID] = Field(..., description="User UUIDs for role assignment/removal")
+
+    user_ids: List[uuid.UUID] = Field(
+        ..., description="User UUIDs for role assignment/removal"
+    )
+
 
 class UpdateRoleRequest(BaseModel):
     """Role update schema."""
+
     name: str = Field(..., description="New role name", min_length=1, max_length=100)
     description: Optional[str] = Field(None, description="New role description")
 
+
 class CreateRoleResponse(BaseModel):
     """Role creation response schema."""
+
     id: uuid.UUID = Field(description="Role unique identifier")
     name: str = Field(description="Role name")
     description: str | None = Field(default=None, description="Role description")
@@ -94,6 +108,6 @@ class CreateRoleResponse(BaseModel):
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "name": "admin",
-                "description": "Administrator role with full access"
+                "description": "Administrator role with full access",
             }
         }

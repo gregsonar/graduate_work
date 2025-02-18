@@ -7,10 +7,15 @@ from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from subscriptions.models import (Subscription, SubscriptionHistory,
-                                  SubscriptionPlan, UserSubscription, UserSubscriptionHistory)
+from subscriptions.models import (
+    Subscription,
+    SubscriptionHistory,
+    SubscriptionPlan,
+    UserSubscription,
+    UserSubscriptionHistory,
+)
 
 from subscriptions.models.base_models import Base
 
@@ -20,7 +25,7 @@ config = context.config
 
 
 def get_database_url():
-    db_url = f'postgresql+asyncpg://{cf.POSTGRES_USER}:{cf.POSTGRES_PASSWORD}@{cf.POSTGRES_HOST}:{cf.POSTGRES_PORT}/{cf.POSTGRES_DB}'
+    db_url = f"postgresql+asyncpg://{cf.POSTGRES_USER}:{cf.POSTGRES_PASSWORD}@{cf.POSTGRES_HOST}:{cf.POSTGRES_PORT}/{cf.POSTGRES_DB}"
     print(f"Database URL: {db_url}")
     return db_url
 

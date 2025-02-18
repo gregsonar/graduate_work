@@ -51,7 +51,7 @@ class TimeTable:
 
     @property
     def key(self) -> str:
-        return f'm{self.min}h{self.h}d{self.day}m{self.month}w{self.week_day}'
+        return f"m{self.min}h{self.h}d{self.day}m{self.month}w{self.week_day}"
 
 
 @dataclass
@@ -64,8 +64,8 @@ class Rule:
 
 
 class MessageType(Enum):
-    EMAIL = 'email'
-    WEBSOCKET = 'websocket'
+    EMAIL = "email"
+    WEBSOCKET = "websocket"
 
 
 @dataclass
@@ -76,8 +76,9 @@ class Message:
     user_id: UUID
 
     def __repr__(self):
-        return f'Message: {self.body} to {self.user_id} ' \
-               f'with type {self.message_type}'
+        return (
+            f"Message: {self.body} to {self.user_id} " f"with type {self.message_type}"
+        )
 
 
 LoadRuleSchema = marshmallow_dataclass.class_schema(Rule)

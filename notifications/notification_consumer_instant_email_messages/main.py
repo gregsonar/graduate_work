@@ -14,15 +14,15 @@ def process_message(ch, method, properties, message_data) -> None:
     user: dict = data.user
     subject: str = data.subject
 
-    html = message_processor.render_template(body=body, template='message.html')
+    html = message_processor.render_template(body=body, template="message.html")
     sender = config.mailer_from_email
-    email = user.get('email')
+    email = user.get("email")
     if email:
-        message_processor.send_email(user['email'], sender, subject, html)
-        message_processor.save_to_db(user_id=user['id'], message=subject)
+        message_processor.send_email(user["email"], sender, subject, html)
+        message_processor.save_to_db(user_id=user["id"], message=subject)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     message_processor = EmaiMessageProcessor(
         logger=logger,
         mailer_host=config.mailer_host,
@@ -32,9 +32,9 @@ if __name__ == '__main__':
         sender_email=config.mailer_from_email,
         dsl=config.dsl_for_notifications,
         message_table_name=config.notifications_table_name,
-        templates_dir='templates',
-        template_name='message.html',
-        subject='Welcome to out perfect theater'
+        templates_dir="templates",
+        template_name="message.html",
+        subject="Welcome to out perfect theater",
     )
 
     notificator = Notificator(

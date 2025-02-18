@@ -4,11 +4,11 @@ from notification_scheduler.tasks.tasks_generator import add_all_tasks
 from notification_scheduler.tasks.message_generator import generate_messages
 
 app = Celery(
-    'notification_scheduler',
-    broker='amqp://rabbit:rabbit@notification-rabbitmq//',
+    "notification_scheduler",
+    broker="amqp://rabbit:rabbit@notification-rabbitmq//",
     include=[
-        'notification_scheduler.tasks.tasks_generator',
-        'notification_scheduler.tasks.message_generator',
+        "notification_scheduler.tasks.tasks_generator",
+        "notification_scheduler.tasks.message_generator",
     ],
 )
 
@@ -23,5 +23,5 @@ def send_message(_, timetable_id: str):
     generate_messages(timetable_id)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.start()

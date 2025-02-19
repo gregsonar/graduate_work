@@ -4,7 +4,7 @@
 
 import aiohttp
 import asyncio
-from datetime import datetime
+from datetime import datetime, UTC
 from celery import Celery
 from payments.providers.yookassa_provider import YooKassaProvider
 from payments.models.payment_jobs import PaymentJob
@@ -23,24 +23,28 @@ from dotenv import load_dotenv
 # Настройки Celery
 celery = Celery("payments")
 celery.conf.broker_url = "redis://localhost:6379/0"
+# Используем встроенный планировщик Celery Beat
+celery.conf.beat_schedule = {
+    'schedule-autopayments-every-12-hours': {
+        'task': 'payments.celery.tasks.schedule_autopayments',
+        'schedule': 12 * 60 * 60,  # каждые 12 часов
+    },
+    'run-task-a-every-10-seconds': {  # задачи только для отладки! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        'task': 'payments.celery.tasks.tasks.task_a',
+        'schedule': 10.0,  # Каждые 10 секунд
+    },
+}
 
 # Логирование
 logger = logging.getLogger(__name__)
 
-# Конфигурируем провайдера YooKassa
-# todo: может быть брать конфигурацию из подключения провайдера? (обдумать решения)
-YOOKASSA_ACCOUNT_ID = "your_account_id"
-YOOKASSA_SECRET_KEY = "your_secret_key"
-
 load_dotenv()
 
-# Инициализация провайдера с тестовыми данными
+# Инициализация провайдера
 provider = YooKassaProvider(
     account_id=os.getenv("YOOKASSA_SHOP_ID", "1234567"),
     secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123")
 )
-
-provider = YooKassaProvider(YOOKASSA_ACCOUNT_ID, YOOKASSA_SECRET_KEY)
 
 # URL API подписок
 SUBSCRIPTIONS_API_URL = "http://subscriptions/api/v1/subscription/admin/due"
@@ -50,7 +54,7 @@ async def fetch_due_subscriptions():
     """Асинхронный запрос в API подписок"""
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(SUBSCRIPTIONS_API_URL) as response:
+            async with session.get(SUBSCRIPTIONS_API_URL, timeout=30) as response:
                 if response.status == 200:
                     return await response.json()
                 else:
@@ -64,6 +68,11 @@ async def fetch_due_subscriptions():
 @celery.task(bind=True, max_retries=3, default_retry_delay=60 * 5)
 def process_autopayment(self, subscription):
     """Обрабатывает автоплатёж для подписки"""
+    required_keys = ["id", "payment_method_id", "amount"]
+    if not all(key in subscription for key in required_keys):
+        logger.error("Subscription data is missing required keys")
+        return
+
     try:
         subscription_id = subscription["id"]
         payment_method_id = subscription["payment_method_id"]
@@ -87,10 +96,12 @@ def process_autopayment(self, subscription):
             subscription_id=subscription_id,
             payment_id=payment_data["id"],
             status=payment_data["status"],
-            created_at=datetime.utcnow()
+            created_at=datetime.now(UTC)
         )
-        db.session.add(payment)
-        db.session.commit()
+        try:
+            db.session.add(payment)
+        finally:
+            db.session.commit()
 
         logger.info(f"Autopayment {payment_data['id']} created for subscription {subscription_id}")
 
@@ -116,3 +127,18 @@ def schedule_autopayments():
         process_autopayment.delay(subscription)
 
     logger.info(f"Scheduled {len(subscriptions)} autopayments")
+
+# Задачи для отладки -=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=--=-=-==-=-=-=--==-=-=-==-=-=-=-=-=-=-=-=-=-=--==-=-
+
+@celery.task
+def task_a():
+    logger.info("Task A: Starting execution")
+    # Ставим Task B в очередь с задержкой 2 секунды
+    task_b.apply_async(countdown=2)
+    return "Task A: Successfully queued Task B"
+
+@celery.task
+def task_b():
+    logger.info("Task B: Executing and writing to log")
+    print("Task B: This message goes to stdout")
+    return "Task B: Completed successfully"

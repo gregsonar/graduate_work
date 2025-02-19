@@ -27,6 +27,8 @@ services:
     depends_on:
       postgres_admin:
         condition: service_healthy
+      auth_api:
+        condition: service_healthy
     volumes:
       - static_volume:/opt/app/static
       - media_volume:/opt/app/media

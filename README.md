@@ -5,7 +5,7 @@
 Из корневой директории проекта выполнить команду:
 
 ```
-docker compose -f docker-compose.main.yaml up --build
+docker compose -f docker-compose.main.yaml up subscriptions_api --build
 ```
 
 ### Swagger адреса: 

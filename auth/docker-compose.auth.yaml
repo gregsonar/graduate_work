@@ -40,6 +40,7 @@ services:
       timeout: 10s
     networks:
       - auth_network
+      - payments_network # payments/docker-compose.autopayments.yml
     restart: unless-stopped
 
   auth_api:

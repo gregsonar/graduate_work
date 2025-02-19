@@ -27,6 +27,7 @@ include:
   - auth/docker-compose.auth.yaml
 #  - notifications/docker-compose.notifications.yaml
   - subscriptions/docker-compose.subscriptions.yaml
+#  - payments/docker-compose.autopayments.yml  # celery для автоплатежей
 
 networks:
   backend:
@@ -44,4 +45,7 @@ networks:
   subscription_network:
     driver: bridge
     name: subscription_network
+  payments_network:
+    driver: bridge
+    name: payments_network
 

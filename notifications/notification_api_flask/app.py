@@ -1,6 +1,7 @@
 import json
+from flask_cors import CORS
 
-from flask import Flask
+from flask import Flask, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from settings.config import configurations
@@ -11,6 +12,7 @@ from views.rule import RuleAPI
 from views.to_all import SendGlobalMessageAPI
 
 app = Flask(__name__)
+CORS(app)
 
 app.config.from_object(configurations['dev'])
 db.init_app(app)
@@ -19,6 +21,14 @@ db.init_app(app)
 @app.route('/')
 def index() -> str:
     return 'Hi there! from Notification API v.1.0'
+
+@app.route('/admin')
+def admin_interface():
+    return send_from_directory('static', 'admin.html')
+
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
 
 
 app.add_url_rule('/new-user', view_func=UserCreatedAPI.as_view('new_user'))

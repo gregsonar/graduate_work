@@ -1,8 +1,8 @@
 import uuid
 import json
 import smtplib
-
 import psycopg2
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from jinja2 import Environment, FileSystemLoader
@@ -35,6 +35,9 @@ class EmaiMessageProcessor:
         self.template_name = template_name
         self.subject = subject
 
+    def get_db_connection(self):
+        return psycopg2.connect(**self.dsl)
+
     def render_template(self, template: str, **kwargs) -> str:
         template_env = Environment(loader=FileSystemLoader(self.templates_dir))
         templ = template_env.get_template(template)
@@ -52,18 +55,20 @@ class EmaiMessageProcessor:
         server.login(self.mailer_user, self.mailer_pass)
         try:
             server.sendmail(sender, to, msg.as_string())
+            self.logger.info(f'Email sent successfully to {to}')
         except Exception as e:
-            self.logger.error(e)
+            self.logger.error(f'Error sending email to {to}: {e}')
         finally:
             server.quit()
 
     def save_to_db(self, user_id: str, message: str) -> None:
-        with psycopg2.connect(**self.dsl) as conn, conn.cursor() as cursor:
+        with self.get_db_connection() as conn, conn.cursor() as cursor:
             query = (
                 f'INSERT INTO {self.message_table_name} (id, user_id, message)'
                 f' VALUES (%s, %s, %s)'
             )
             cursor.execute(query, (str(uuid.uuid4()), user_id, message))
+            self.logger.info(f'Message saved to database for user {user_id}')
 
     def process_message(self, ch, method, properties, body) -> None:
         user = json.loads(body)

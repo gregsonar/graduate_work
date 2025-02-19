@@ -6,8 +6,8 @@ services:
     env_file:
       - .env.sample
     networks:
-      - backend
       - notification_network
+
 
   notification-api-test:
       build:
@@ -20,8 +20,8 @@ services:
       depends_on:
         - notification-api-flask
       networks:
-        - backend
         - notification_network
+
 
   notification-api-flask:
       build:
@@ -34,7 +34,6 @@ services:
       env_file:
         - .env.sample
       networks:
-        - backend
         - notification_network
 
   notification-rabbitmq:
@@ -48,8 +47,10 @@ services:
       timeout: 10s
       retries: 5
     networks:
-      - backend
       - notification_network
+    ports:
+      - "15672:15672"
+      - "5672:5672"
 
   notification_consumer_welcome:
     build:
@@ -65,7 +66,6 @@ services:
       notification-rabbitmq:
         condition: service_healthy
     networks:
-      - backend
       - notification_network
 
   notification_consumer_to_all:
@@ -82,7 +82,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        - backend
         - notification_network
 
   notification_consumer_instant_email_messages:
@@ -99,7 +98,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        - backend
         - notification_network
 
   notification_consumer_sheduler:
@@ -116,7 +114,6 @@ services:
         notification-rabbitmq:
           condition: service_healthy
       networks:
-        - backend
         - notification_network
 
   notification_db:
@@ -127,7 +124,6 @@ services:
     env_file:
       - .env.sample
     networks:
-      - backend
       - notification_network
 
   notification_websockets:
@@ -137,10 +133,14 @@ services:
       restart: always
       volumes:
         - ./notification_websocket_server:/usr/src/app/
+      ports:
+        - "8765:8765"
       env_file:
         - .env.sample
+      depends_on:
+        notification-rabbitmq:
+          condition: service_healthy
       networks:
-        - backend
         - notification_network
 
   notification_scheduler_celery_beat:
@@ -153,7 +153,6 @@ services:
       env_file:
         - .env.sample
       networks:
-        - backend
         - notification_network
 
   notification_scheduler_celery_messages:
@@ -166,15 +165,35 @@ services:
       env_file:
         - .env.sample
       networks:
-        - backend
+        
         - notification_network
 
   mailer:
      image: mailhog/mailhog
      restart: always
      networks:
-       - backend
        - notification_network
+     ports:
+       - "8025:8025"  # веб-интерфейс
+       - "1025:1025"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.9.3
+    restart: always
+    networks:
+      - notification_network
+    ports:
+      - "5044:5044"
+    environment:
+      - XPACK_MONITORING_ENABLED=false
+    volumes:
+      - ./docker/development/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
 
 volumes:
   notification_postgres_data:
+
+# networks:
+#   notification_network:
+#     driver: bridge
+
+# d6fa8c32-fdce-44cf-9444-9848119c36a3

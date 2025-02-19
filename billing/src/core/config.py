@@ -11,8 +11,8 @@ class Setting(BaseSettings):
 
     celery_broker_url: str = "redis://redis_billing:6380/0"
 
-    yookassa_token: str
-    yookassa_shopid: str
+    yookassa_token: str = Field(default='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM')
+    yookassa_shopid: str = Field(default='1023840')
 
     check_delay_in_seconds: int = 5
 
@@ -40,7 +40,7 @@ class Setting(BaseSettings):
     class Config:
         env_prefix = "db_"
         env_file = ".env"
-        extra = "allow"  # Это разрешит передачу любых дополнительных полей
+        extra = "allow"
 
 
 settings = Setting()

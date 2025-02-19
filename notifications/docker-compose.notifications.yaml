@@ -168,6 +168,24 @@ services:
         
         - notification_network
 
+  notification_consumer_user:
+    build:
+      context: .
+      dockerfile: docker/development/notification_consumer/Dockerfile
+    restart: always
+    volumes:
+      - ./notification_consumer_welcome:/usr/src/app/
+      - ./notificator:/usr/src/app/notificator
+      - ./notification_api_flask/models.py:/usr/src/app/models.py
+
+    env_file:
+      - .env.sample
+    depends_on:
+      notification-rabbitmq:
+        condition: service_healthy
+    networks:
+      - notification_network
+
   mailer:
      image: mailhog/mailhog
      restart: always

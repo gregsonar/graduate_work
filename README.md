@@ -18,6 +18,10 @@ Auth:
 ```
 http://localhost/api/openapi
 ```
+Админка нотификаций:
+```
+http://localhost:8080/admin
+```
 
 ### Запуск фронтенда
 

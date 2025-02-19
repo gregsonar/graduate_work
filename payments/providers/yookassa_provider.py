@@ -7,11 +7,12 @@ from uuid import UUID, uuid4
 import requests
 from yookassa import Configuration, Payment
 
+from payments.providers.base import BasePaymentProvider
 from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
 
 
-class YooKassaProvider:
+class YooKassaProvider(BasePaymentProvider):
     def __init__(self, account_id: str, secret_key: str):
         Configuration.configure(account_id, secret_key)
 
@@ -26,24 +27,19 @@ class YooKassaProvider:
             description: str = "",
             metadata: Optional[Dict] = None,
             capture: bool = False,
-            idempotence_key: Optional[UUID] = None
+            idempotence_key: Optional[UUID] = None,
+            save_payment_method: Optional[bool] = False
     ) -> Dict[str, Any]:
         try:
             idempotence_key = idempotence_key or self._generate_idempotence_key()
 
-            payment = Payment.create({
-                "amount": {
-                    "value": amount,
-                    "currency": currency
-                },
-                "confirmation": {
-                    "type": "redirect",
-                    "return_url": "https://your-service.com/return"  # todo: добавить в .env
-                },
-                "capture": capture,
-                "description": description,
-                "metadata": metadata or {}
-            }, idempotence_key)
+            payment = self._create_payment_object(amount=amount,
+                                                  currency=currency,
+                                                  description=description,
+                                                  metadata=metadata,
+                                                  capture=capture,
+                                                  save_payment_method=save_payment_method,
+                                                  idempotence_key=idempotence_key)
 
             # Преобразуем JSON-строку в словарь
             payment_data = json.loads(payment.json())
@@ -51,6 +47,35 @@ class YooKassaProvider:
 
         except Exception as e:
             raise PaymentCreationError(f"Payment creation failed: {str(e)}")
+
+    def make_recurrent_payment(
+            self,
+            amount: float,
+            currency: str = "RUB",
+            description: str = "",
+            metadata: Optional[Dict] = None,
+            capture: bool = False,
+            payment_method_id: str = "",
+            idempotence_key: Optional[UUID] = None
+    ) -> Dict[str, Any]:
+        try:
+            idempotence_key = idempotence_key or self._generate_idempotence_key()
+
+            payment = self._create_payment_object(amount=amount,
+                                                  currency=currency,
+                                                  description=description,
+                                                  metadata=metadata,
+                                                  capture=capture,
+                                                  payment_method_id=payment_method_id,
+                                                  idempotence_key=idempotence_key)
+
+            # Преобразуем JSON-строку в словарь
+            payment_data = json.loads(payment.json())
+            return YooKassaPaymentSchema(**payment_data).model_dump()
+
+        except Exception as e:
+            raise PaymentCreationError(f"Payment creation failed: {str(e)}")
+
 
     def get_payment(self, payment_id: str) -> Dict[str, Any]:
         try:
@@ -96,6 +121,13 @@ class YooKassaProvider:
         except PaymentCaptureError as e:
             raise PaymentCaptureError(f"Payment capture failed: {str(e)}")
 
+    def refund_payment(self,
+                       payment_id: str,
+                       idempotence_key: Optional[UUID] = None
+    ) -> Dict[str, Any]:
+        # Логика возвратов
+        pass
+
     def handle_webhook(self, event: str, data: dict):
         handlers = {
             'payment.succeeded': self._handle_payment_succeeded,
@@ -131,9 +163,38 @@ class YooKassaProvider:
         self._process_refund(refund_id, payment_id)
 
     def _update_payment_status(self, payment_id: str, status: str):
-        # Реализуйте логику обновления статуса в вашей БД
+        # логгирование информации о платеже
         print(f"Updating payment {payment_id} to status {status}")
 
     def _process_refund(self, refund_id: str, payment_id: str):
-        # Реализуйте логику обработки возврата
+        # Логику обработки возврата
         print(f"Processing refund {refund_id} for payment {payment_id}")
+
+    def _create_payment_object(
+            self,
+            amount: float,
+            currency: str = "RUB",
+            description: str = "",
+            metadata: Optional[Dict] = None,
+            capture: bool = False,
+            payment_method_id: str = "",
+            idempotence_key: Optional[UUID] = None,
+            save_payment_method: Optional[bool] = False
+    ):
+        payment_data = {
+            "amount": {
+                "value": amount,
+                "currency": currency
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": "https://your-service.com/return"  # todo: добавить в .env
+            },
+            "save_payment_method": save_payment_method,  # Сохранение платежных данных для проведения автоплатежей
+            "capture": capture,
+            "description": description,
+            "metadata": metadata or {}
+        }
+        if payment_method_id:
+            payment_data.update({"payment_method_id": payment_method_id})
+        return Payment.create(payment_data, idempotency_key=idempotence_key)

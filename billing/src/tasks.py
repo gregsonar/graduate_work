@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 
+import aiohttp
 import httpx
 from billing.src.core.config import settings
 from billing.src.db.postgres import get_sync_session
@@ -10,7 +11,10 @@ from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
 from celery import Celery
 from celery.schedules import crontab
+
+from payments.models.payment_jobs import PaymentJob
 from payments.providers.yookassa_provider import YooKassaProvider
+from payments import db
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +198,10 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(minute='0', hour='0'),
         check_subscriptions_expiration.s(),
     )
+    sender.add_periodic_task(
+        crontab(minute='*/1'),
+        schedule_autopayments.s(),
+    )
 
 
 @celery.task()
@@ -246,3 +254,83 @@ async def handle_active_subscription(client, subscription):
                   f"Код состояния: {response.status_code}. "
                   f"Ответ сервера: {response.text}"
                   )
+
+# ----------------------
+async def fetch_due_subscriptions():
+    """Асинхронный запрос в API подписок"""
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(settings.base_url + 'admin/due', timeout=30) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    logger.error(f"Failed to fetch subscriptions, status: {response.status}")
+                    return []
+        except Exception as e:
+            logger.error(f"Error fetching subscriptions: {e}")
+            return []
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60 * 5)
+def process_autopayment(self, subscription):
+    """Обрабатывает автоплатёж для подписки"""
+    required_keys = ["id", "payment_method_id", "amount"]
+    if not all(key in subscription for key in required_keys):
+        logger.error("Subscription data is missing required keys")
+        return
+
+    try:
+        subscription_id = subscription["id"]
+        payment_method_id = subscription["payment_method_id"]
+        amount = subscription["amount"]
+
+        if not payment_method_id:
+            logger.error(f"No saved payment method for subscription {subscription_id}")
+            return
+
+        # Создаём платёж через YooKassa
+        payment_data = provider.make_recurrent_payment(
+            amount=amount,
+            currency="RUB",
+            description=f"Autopayment for subscription {subscription_id}",
+            payment_method_id=payment_method_id,
+            capture=True
+        )
+
+        # Записываем платёж в БД
+        payment = PaymentJob(
+            subscription_id=subscription_id,
+            payment_id=payment_data["id"],
+            status=payment_data["status"],
+            created_at=datetime.now(UTC)
+        )
+        try:
+            db.session.add(payment)
+        finally:
+            db.session.commit()
+
+        logger.info(f"Autopayment {payment_data['id']} created for subscription {subscription_id}")
+
+        # Проверяем статус
+        if payment_data["status"] == "succeeded":
+            logger.info(f"Payment {payment_data['id']} succeeded")
+        else:
+            logger.warning(f"Payment {payment_data['id']} is in status {payment_data['status']}")
+            self.retry()
+
+    except Exception as e:
+        logger.error(f"Error processing autopayment for subscription {subscription_id}: {e}")
+        self.retry(exc=e)
+
+
+@celery.task
+def schedule_autopayments():
+    """Запрашивает подписки и создаёт задачи на автоплатежи"""
+    print('f' * 100)
+    loop = asyncio.get_event_loop()
+    subscriptions = loop.run_until_complete(fetch_due_subscriptions())
+
+    for subscription in subscriptions:
+        process_autopayment.delay(subscription)
+
+    logger.info(f"Scheduled {len(subscriptions)} autopayments")

@@ -1,21 +1,16 @@
 import asyncio
-import json
-import time
 import logging
-from datetime import datetime, timedelta, UTC, timezone
-from celery.schedules import crontab
+import time
+from datetime import datetime, timedelta, timezone
 
 import httpx
-
-from celery import Celery, shared_task
-
+from billing.src.core.config import settings
+from billing.src.db.postgres import get_sync_session
 from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
-
+from celery import Celery
+from celery.schedules import crontab
 from payments.providers.yookassa_provider import YooKassaProvider
-
-from billing.src.db.postgres import get_sync_session, async_session
-from billing.src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +24,6 @@ provider = YooKassaProvider(
     account_id='1023840',
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
 )
-
 
 
 async def subscript_process(payment, tariff, response_text):
@@ -47,19 +41,21 @@ async def subscript_process(payment, tariff, response_text):
                 await update_subscription(client, response.json(), tariff)
             else:
                 logger.warning(
-                    f"Something went wrong with the subscription API. Status code: {response.status_code}")
+                    f"Something went wrong with the subscription API. "
+                    f"Status code: {response.status_code}"
+                )
 
         except Exception as e:
             logger.exception(str(e))
             return {"error": str(e)}
 
+
 async def get_subscription(client, user_id):
-    # Используем переменную для хранения URL
-    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
-    return await client.get(base_url + f"user/{user_id}")
+    return await client.get(settings.base_url + f"user/{user_id}")
+
 
 async def create_subscription(client, payment, tariff):
-    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+    base_url = settings.base_url
     # Получаем текущую дату и время в UTC
     now_utc_datetime = datetime.now(timezone.utc)
     end_date = now_utc_datetime + timedelta(days=tariff.duration)
@@ -80,10 +76,14 @@ async def create_subscription(client, payment, tariff):
         logger.info("Subscription created successfully")
     else:
         logger.error(
-            f"Failed to create subscription. Status code: {response.status_code}. Response text: {response.text}")
+            f"Failed to create subscription. "
+            f"Status code: {response.status_code}. "
+            f"Response text: {response.text}"
+        )
+
 
 async def update_subscription(client, subscription_data, tariff):
-    base_url = "http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/"
+    base_url = settings.base_url
     # Получаем текущую дату и время в UTC
     now_utc_datetime = datetime.now(timezone.utc)
 
@@ -96,7 +96,9 @@ async def update_subscription(client, subscription_data, tariff):
         data = {
             'status': 'active',
             'plan_type': tariff.name,
-            'end_date': (now_utc_datetime + timedelta(days=tariff.duration)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            'end_date': (
+                now_utc_datetime + timedelta(days=tariff.duration)
+            ).strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         log_message = "Expired subscription renewed successfully"
     elif subscription_data['status'] == 'pending':
@@ -105,7 +107,9 @@ async def update_subscription(client, subscription_data, tariff):
         log_message = "Subscription activated successfully"
     elif subscription_data['status'] == 'active':
         # Получаем текущую дату и время в UTC
-        old_end_date = datetime.strptime(subscription_data['end_date'], "%Y-%m-%dT%H:%M:%SZ")
+        old_end_date = datetime.strptime(
+            subscription_data['end_date'], "%Y-%m-%dT%H:%M:%SZ"
+        )
         new_end_date = old_end_date + timedelta(days=tariff.duration)
         data = {
             'end_date': new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -121,14 +125,20 @@ async def update_subscription(client, subscription_data, tariff):
             log_message = "Subscription updated successfully"
 
     # Обновление подписки
-    response = await client.put(base_url + f"{subscription_data['id']}", json=data)
+    response = await client.put(
+        base_url + f"{subscription_data['id']}",
+        json=data,
+    )
 
     # Обработка ответа
     if response.status_code == httpx.codes.OK:
         logger.info(log_message)
     else:
         logger.error(
-            f"Failed to update subscription. Status code: {response.status_code}. Response text: {response.text}")
+            f"Failed to update subscription. "
+            f"Status code: {response.status_code}. "
+            f"Response text: {response.text}")
+
 
 @celery.task(name="Check payment status & subscribe")
 def subscribe(payment_model_id, payment_id, payment_status):
@@ -155,7 +165,9 @@ def subscribe(payment_model_id, payment_id, payment_status):
                                                   response_text)
                 session.add(payment)
 
-            elif new_payment_data.get('status') == repr(PaymentStatus.WAITING_FOR_CAPTURE):
+            elif new_payment_data.get('status') == repr(
+                    PaymentStatus.WAITING_FOR_CAPTURE
+            ):
                 new_payment_data = provider.capture_payment(
                     payment_id=new_payment_data.get('id')
                 )
@@ -168,7 +180,6 @@ def subscribe(payment_model_id, payment_id, payment_status):
                     subscript_process(payment, tariff, response_text)
                 )
                 session.add(payment)
-
 
             session.commit()
             return response_text
@@ -184,6 +195,7 @@ def setup_periodic_tasks(sender, **kwargs):
         check_subscriptions_expiration.s(),
     )
 
+
 @celery.task()
 def check_subscriptions_expiration():
     loop = asyncio.get_event_loop()
@@ -194,22 +206,43 @@ async def check_subscriptions_expiration_async():
     async with httpx.AsyncClient() as client:
         try:
             # Получение списка всех активных подписок
-            response = await client.get("http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/admin/all")
+            response = await client.get(settings.base_url + "admin/all")
             subscriptions = response.json()
+
+            # Проверка каждой активной подписки на истечение срока
             for subscription in subscriptions:
                 if subscription["status"] == "active":
-                    end_date = datetime.strptime(subscription["end_date"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-                    current_time = datetime.now(timezone.utc)
-
-                    if current_time > end_date:
-                        # Подписка истекла, меняем статус на "Истекшая"
-                        data = {"status": "expired"}
-                        response = await client.put(f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/{subscription['id']}", json=data)
-
-                        if response.status_code == 200:
-                            print(f"Subscription {subscription['id']} expired and status changed successfully")
-                        else:
-                            print(f"Failed to change status of subscription {subscription['id']}. Status code: {response.status_code}. Response text: {response.text}")
+                    await handle_active_subscription(client, subscription)
 
         except Exception as e:
-            print(str(e))
+            print(f"Ошибка при проверке подписок: {str(e)}")
+
+
+async def handle_active_subscription(client, subscription):
+    # Получение даты окончания подписки
+    end_date = datetime.strptime(
+        subscription["end_date"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+        tzinfo=timezone.utc)
+
+    # Текущее время
+    current_time = datetime.now(timezone.utc)
+
+    # Проверка истечения срока подписки
+    if current_time > end_date:
+        # Подписка истекла, меняем статус на "expired"
+        data = {"status": "expired"}
+        response = await client.put(
+            settings.base_url + f"{subscription['id']}",
+            json=data,
+        )
+
+        if response.status_code == 200:
+            print(
+                f"Подписка {subscription['id']} истекла "
+                f"и статус успешно изменён."
+            )
+        else:
+            print(f"Не удалось изменить статус подписки {subscription['id']}."
+                  f"Код состояния: {response.status_code}. "
+                  f"Ответ сервера: {response.text}"
+                  )

@@ -1,11 +1,10 @@
 from enum import Enum
 
-from sqlalchemy import Column, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
-
 from billing.src.db.postgres import Base
 from billing.src.models.mixins import TimeStampedMixin, UUIDMixin
 from billing.src.models.tariffs import TariffModel
+from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
@@ -20,6 +19,7 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
     )
     status = Column(String)
     payment_id = Column(UUID, nullable=False)
+
 
 class PaymentStatus(Enum):
     SUCCEEDED = 'succeeded'

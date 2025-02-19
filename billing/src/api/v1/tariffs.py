@@ -1,10 +1,11 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends
-
-from billing.src.services.tariff_service import get_tariff_service, TariffService
 from billing.src.schemas.tariff_schemas import TariffSchema
-
+from billing.src.services.tariff_service import (
+    TariffService,
+    get_tariff_service,
+)
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 

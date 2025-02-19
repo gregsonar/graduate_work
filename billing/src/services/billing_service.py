@@ -1,23 +1,21 @@
-from datetime import datetime, timezone, timedelta
 from typing import Dict
 from uuid import UUID
 
 import httpx
-import requests
-from fastapi import Depends, status, HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from billing.src.core.config import settings
 from billing.src.core.exceptions import TariffNotFoundError
 from billing.src.db.postgres import get_session
 from billing.src.models.payments import PaymentModel
-from billing.src.models.refunds import RefundModel
+# from billing.src.models.refunds import RefundModel
 from billing.src.models.tariffs import TariffModel
 from billing.src.schemas.payment_schemas import CreatedPaymentSchema
 from billing.src.schemas.tariff_schemas import PaymentSchema
-from payments.providers.yookassa_provider import YooKassaProvider
-from billing.src.core.config import settings
 from billing.src.tasks import subscribe
+from fastapi import Depends, HTTPException, status
+from payments.providers.yookassa_provider import YooKassaProvider
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class BillingService:
 
@@ -30,13 +28,14 @@ class BillingService:
         )
         self.db_session = db_session
         self.client = httpx.AsyncClient()
+        self.base_url = settings.base_url
 
     async def save_payment_in_db(
-            self,
-            user_id: UUID,
-            tariff: TariffModel,
-            payment: Dict[str, str],
-    )  -> PaymentModel:
+        self,
+        user_id: UUID,
+        tariff: TariffModel,
+        payment: Dict[str, str],
+    ) -> PaymentModel:
         """Метод для сохранения платежа в базе."""
         print(user_id)
         new_db_payment = PaymentModel(
@@ -81,7 +80,11 @@ class BillingService:
             )
         return payments
 
-    async def create_payment(self, user_id: UUID, tariff_id: UUID) -> CreatedPaymentSchema:
+    async def create_payment(
+        self,
+        user_id: UUID,
+        tariff_id: UUID
+    ) -> CreatedPaymentSchema:
 
         tariff = await self.db_session.get(TariffModel, tariff_id)
         if not tariff:
@@ -99,7 +102,6 @@ class BillingService:
         return CreatedPaymentSchema(
             redirect_url=payment.get('confirmation').get('confirmation_url')
         )
-
 
     async def cancel_subscription(
             self,
@@ -119,8 +121,7 @@ class BillingService:
                 "immediate": immediate
             }
 
-            # Отправляем запрос на отмену подписки
-            cancel_response = await self._cancel_subscription(
+            await self._cancel_subscription(
                 subscription_id,
                 data,
             )
@@ -128,7 +129,6 @@ class BillingService:
             if refund:
                 # Логика возврата средств
                 pass
-
 
         except (KeyError, ValueError, httpx.HTTPError) as e:
             if isinstance(e, KeyError) or isinstance(e, ValueError):
@@ -146,7 +146,7 @@ class BillingService:
             self,
             user_id: UUID,
     ):
-        url = f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/user/{user_id}"
+        url = self.base_url + f"user/{user_id}"
         response = await self.client.get(url)
         return response
 
@@ -154,9 +154,10 @@ class BillingService:
             self,
             subscription_id: UUID,
             data: dict):
-        url=f"http://subscriptions_api:8000/api/subscriptions/api/v1/subscription/{subscription_id}/cancel"
+        url = self.base_url + f"{subscription_id}/cancel"
         response = await self.client.post(url, json=data)
         return response
+
 
 def get_billing_service(
         session: AsyncSession = Depends(get_session)

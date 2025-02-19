@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CreatePaymentSchema(BaseModel):
@@ -9,6 +9,7 @@ class CreatePaymentSchema(BaseModel):
 
 class CreatedPaymentSchema(BaseModel):
     redirect_url: str = Field(description="URL to YooKasa payment")
+
 
 # Responses for specific status codes
 class DetailResponse(BaseModel):

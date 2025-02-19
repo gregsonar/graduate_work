@@ -1,8 +1,7 @@
-from sqlalchemy import Column, String, Numeric
-from sqlalchemy.dialects.postgresql import UUID
-
 from billing.src.db.postgres import Base
-from billing.src.models.mixins import UUIDMixin, TimeStampedMixin
+from billing.src.models.mixins import TimeStampedMixin, UUIDMixin
+from sqlalchemy import Column, Numeric, String
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class RefundModel(Base, UUIDMixin, TimeStampedMixin):

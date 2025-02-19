@@ -1,8 +1,8 @@
 import logging
 
 import httpx
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette import status
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,9 @@ async def get_current_user(
 
 
 async def get_admin_user(current_user=Depends(get_current_user)):
-    if not any(role in ["admin", "superuser"] for role in current_user["roles"]):
+    if not any(
+            role in ["admin", "superuser"] for role in current_user["roles"]
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions"

@@ -1,16 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.responses import ORJSONResponse
-from sqlalchemy.ext.asyncio import create_async_engine
-
+from billing.src.api import healthcheck
+from billing.src.api.v1 import billing, tariffs
 from billing.src.core.config import settings
 from billing.src.core.exceptions import BaseErrorWithContent
 from billing.src.db import postgres
-from billing.src.api.v1 import tariffs
-from billing.src.api.v1 import billing
-from billing.src.api import healthcheck
-from billing.src.tasks import subscribe
+from fastapi import FastAPI, Request
+from fastapi.responses import ORJSONResponse
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 @asynccontextmanager
@@ -41,13 +38,15 @@ app.openapi_components = {
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Введите ваш JWT токен в формате: **Bearer &lt;token&gt;**\n\n"
-                         "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
+            "description": "Введите ваш JWT токен в формате:"
+                           " **Bearer &lt;token&gt;**\n\n"
+                           "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
         }
     }
 }
 
 app.openapi_security = [{"bearerAuth": []}]
+
 
 @app.exception_handler(BaseErrorWithContent)
 async def project_error_handler(request: Request, exc: BaseErrorWithContent):
@@ -56,6 +55,10 @@ async def project_error_handler(request: Request, exc: BaseErrorWithContent):
         content=exc.content,
     )
 
-app.include_router(healthcheck.router, prefix="/api/v1/billing", tags=['health'])
+app.include_router(
+    healthcheck.router,
+    prefix="/api/v1/billing",
+    tags=['health']
+)
 app.include_router(tariffs.router, prefix="/api/v1/billing", tags=['tariffs'])
 app.include_router(billing.router, prefix="/api/v1/billing", tags=['billing'])

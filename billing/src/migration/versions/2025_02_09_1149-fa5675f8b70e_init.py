@@ -1,14 +1,14 @@
 """init
 
 Revision ID: fa5675f8b70e
-Revises: 
+Revises:
 Create Date: 2025-02-09 11:49:51.768075+00:00
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

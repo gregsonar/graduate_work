@@ -1,13 +1,18 @@
-from uuid import UUID
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Response
-
-from billing.src.schemas.tariff_schemas import PaymentSchema
-from billing.src.services.billing_service import BillingService, get_billing_service
 from billing.src.api.dependencies import get_current_user
-from billing.src.schemas.payment_schemas import CreatedPaymentSchema, \
-    CreatePaymentSchema, DetailResponse, SubscriptionCancel
+from billing.src.schemas.payment_schemas import (
+    CreatedPaymentSchema,
+    CreatePaymentSchema,
+    DetailResponse,
+    SubscriptionCancel,
+)
+from billing.src.schemas.tariff_schemas import PaymentSchema
+from billing.src.services.billing_service import (
+    BillingService,
+    get_billing_service,
+)
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 
@@ -27,6 +32,7 @@ async def subscribe(
         user_data.get('id'),
         payment_data.tariff_id,
     )
+
 
 @router.post('/cancel_subscription',
              summary="Отменить подписку",
@@ -48,6 +54,7 @@ async def cancel(
     return DetailResponse(detail="Subscription cancelled successfully",
                           code="SUBSCRIPTION_CANCELLED")
 
+
 @router.get('/payment_history',
             summary="История платежей",
             response_model=list[PaymentSchema],
@@ -57,6 +64,3 @@ async def history(
         payment_service: BillingService = Depends(get_billing_service),
 ) -> list[PaymentSchema]:
     return await payment_service.get_all_payments(user_data['id'])
-
-
-

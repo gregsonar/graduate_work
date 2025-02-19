@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta, timezone, UTC
+from pprint import pprint
 
 import aiohttp
 import httpx
@@ -30,11 +31,13 @@ provider = YooKassaProvider(
 )
 
 
-async def subscript_process(payment, tariff, response_text):
+async def subscript_process(payment, tariff):
     async with httpx.AsyncClient() as client:
         try:
             # Получение информации о текущей подписке
             response = await get_subscription(client, payment.user_id)
+            print("response" * 100)
+            print("response", response.json())
 
             # Проверка статуса ответа
             if response.status_code == httpx.codes.NOT_FOUND:
@@ -72,6 +75,7 @@ async def create_subscription(client, payment, tariff):
         'start_date': now_utc_datetime.isoformat(),
         'end_date': end_date.isoformat(),
         'price': float(tariff.price),
+        'plan_id': str(tariff.id)
     }
 
     # Создание новой подписки
@@ -79,6 +83,8 @@ async def create_subscription(client, payment, tariff):
 
     if response.status_code == httpx.codes.CREATED:
         logger.info("Subscription created successfully")
+        print("create_subscription "* 100)
+        print(response.json()['id'])
         return  response.json()['id']
     else:
         logger.error(
@@ -104,6 +110,7 @@ async def update_subscription(client, subscription_data, tariff):
         data = {
             'status': 'active',
             'plan_type': tariff.name,
+            'plan_id': str(tariff.id),
             'end_date': (
                 now_utc_datetime + timedelta(days=tariff.duration)
             ).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -150,7 +157,7 @@ async def update_subscription(client, subscription_data, tariff):
 
 
 @celery.task(name="Check payment status & subscribe")
-def subscribe(payment_model_id, payment_id, payment_status):
+async def subscribe(payment_model_id, payment_id, payment_status):
     tries = 1
     delay_in_seconds = settings.check_delay_in_seconds
 
@@ -170,8 +177,7 @@ def subscribe(payment_model_id, payment_id, payment_status):
 
             if new_payment_data.get('status') == repr(PaymentStatus.SUCCEEDED):
                 payment.status = new_payment_data.get('status')
-                response_text = subscript_process(payment, tariff,
-                                                  response_text)
+                response_text = await subscript_process(payment, tariff)
                 session.add(payment)
 
             elif new_payment_data.get('status') == repr(
@@ -182,11 +188,11 @@ def subscribe(payment_model_id, payment_id, payment_status):
                 )
                 loop = asyncio.get_event_loop()
                 response_text = loop.run_until_complete(
-                    subscript_process(payment, tariff, response_text)
+                    subscript_process(payment, tariff)
                 )
                 payment.status = new_payment_data.get('status')
                 response_text = loop.run_until_complete(
-                    subscript_process(payment, tariff, response_text)
+                    subscript_process(payment, tariff)
                 )
                 session.add(payment)
 
@@ -304,15 +310,18 @@ def process_autopayment(self, subscription):
         )
 
         # Записываем платёж в БД
-        payment = PaymentJob(
-            subscription_id=subscription_id,
-            payment_id=payment_data["id"],
+        payment = PaymentModel(
+            user_id=subscription["user_id"],
+            tariff_id=subscription["plan_id"],
             status=payment_data["status"],
-            created_at=datetime.now(UTC)
+            payment_id=payment_data["id"],
+            subscription_id=subscription_id,
         )
         session = get_sync_session()
         try:
             session.add(payment)
+        except Exception as e:
+            print(f"Error adding payment to DB: {e}")
         finally:
             session.commit()
 
@@ -338,6 +347,7 @@ def schedule_autopayments():
     subscriptions = loop.run_until_complete(fetch_due_subscriptions())
 
     for subscription in subscriptions:
+        pprint(subscription)
         process_autopayment.delay(subscription)
 
     logger.info(f"Scheduled {len(subscriptions)} autopayments")

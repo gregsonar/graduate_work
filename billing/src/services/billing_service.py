@@ -95,7 +95,7 @@ class BillingService:
         )
 
         payment_db = await self.save_payment_in_db(user_id, tariff.id, payment)
-        subscribe.delay(payment_db.id, payment.get('id'), payment.get('status'))
+        await subscribe.delay(payment_db.id, payment.get('id'), payment.get('status'))
 
         return CreatedPaymentSchema(
             redirect_url=payment.get('confirmation').get('confirmation_url')

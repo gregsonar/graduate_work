@@ -19,6 +19,20 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
     )
     status = Column(String)
     payment_id = Column(UUID, nullable=False)
+    subscription_id = Column(UUID, nullable=False)
+
+    def __repr__(self):
+        return f'<PaymentModel {self.id}>'
+
+    def __init__(self, user_id, tariff_id, status, payment_id, subscription_id, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.tariff_id = tariff_id
+        self.status = status
+        self.payment_id = payment_id
+        self.subscription_id = subscription_id
+
+
 
 
 class PaymentStatus(Enum):

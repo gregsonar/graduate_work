@@ -82,12 +82,65 @@ def upgrade() -> None:
         unique=True,
     )
 
+    # Insert initial tariffs
+    op.bulk_insert(
+        sa.table(
+            'tariff',
+            sa.Column('id', sa.UUID()),
+            sa.Column('name', sa.String()),
+            sa.Column('description', sa.Text()),
+            sa.Column('price', sa.Numeric(precision=6, scale=2)),
+            sa.Column('currency', sa.String(length=3)),
+            sa.Column('duration', sa.Integer()),
+            sa.Column('is_active', sa.Boolean()),
+        ),
+        [
+            {
+                'id': '11111111-1111-1111-1111-111111111111',
+                'name': 'Basic Monthly',
+                'description': 'Basic subscription plan with monthly billing',
+                'price': 9.99,
+                'currency': 'USD',
+                'duration': 30,
+                'is_active': True,
+            },
+            {
+                'id': '22222222-2222-2222-2222-222222222222',
+                'name': 'Premium Monthly',
+                'description': 'Premium subscription with advanced features, billed monthly',
+                'price': 19.99,
+                'currency': 'USD',
+                'duration': 30,
+                'is_active': True,
+            },
+            {
+                'id': '33333333-3333-3333-3333-333333333333',
+                'name': 'Basic Annual',
+                'description': 'Basic subscription plan with annual billing, 2 months free',
+                'price': 99.99,
+                'currency': 'USD',
+                'duration': 365,
+                'is_active': True,
+            },
+            {
+                'id': '44444444-4444-4444-4444-444444444444',
+                'name': 'Premium Annual',
+                'description': 'Premium subscription with advanced features, billed annually, 2 months free',
+                'price': 199.99,
+                'currency': 'USD',
+                'duration': 365,
+                'is_active': True,
+            }
+        ]
+    )
+
     op.create_table('payment',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('tariff_id', sa.UUID(), nullable=False),
     sa.Column('status', sa.String(), nullable=True),
     sa.Column('payment_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('subscription_id', sa.UUID(), nullable=False),
     sa.Column(
         'created',
         sa.DateTime(timezone=True),

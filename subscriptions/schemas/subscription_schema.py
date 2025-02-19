@@ -39,7 +39,10 @@ class SubscriptionBase(BaseModel):
         default=False,
         description="Whether subscription auto-renews"
     )
-
+    plan_id: UUID = Field(
+        description="Associated plan ID",
+        examples=["33333333-3333-3333-3333-333333333333"]
+    )
     @model_validator(mode='after')
     def validate_dates(self) -> 'SubscriptionBase':
         if self.start_date >= self.end_date:
@@ -117,6 +120,7 @@ class SubscriptionResponse(SubscriptionBase):
     )
     created_at: AwareDatetime = Field(description="Subscription creation timestamp")
     updated_at: AwareDatetime = Field(description="Last update timestamp")
+    # plan_id: UUID = Field(description="Associated plan ID")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -131,7 +135,8 @@ class SubscriptionResponse(SubscriptionBase):
                 "price": "29.99",
                 "is_auto_renewable": True,
                 "created_at": "2025-02-04 19:46:17.266259+00:00",
-                "updated_at": "2025-02-04 19:46:17.266259+00:00"
+                "updated_at": "2025-02-04 19:46:17.266259+00:00",
+                "plan_id": "33333333-3333-3333-3333-333333333333"
             }
         }
     )

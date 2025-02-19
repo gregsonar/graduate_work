@@ -15,6 +15,20 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+class RabbitMQSettings(BaseSettings):
+    host: str = Field(default="localhost", alias="RABBITMQ_HOST")
+    user: str = Field(..., alias="RABBITMQ_USER")
+    password: str = Field(..., alias="RABBITMQ_PASS")
+    user_created_queue: str = Field(..., alias="RABBIT_USER_CREATED_QUEUE")
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+rabbit_config = RabbitMQSettings()
+
 class OAuthProviderSettings(BaseModel):
     """Base settings for OAuth providers"""
     client_id: str

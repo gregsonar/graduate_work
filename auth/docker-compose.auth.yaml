@@ -63,6 +63,7 @@ services:
     networks:
       - auth_network
       - backend
+      - notification_network
     restart: unless-stopped
 
   jaeger:

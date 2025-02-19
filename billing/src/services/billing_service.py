@@ -19,8 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class BillingService:
 
-    SUCCEEDED = 'succeeded'
-
     def __init__(self, db_session: AsyncSession):
         self.yoo_provider = YooKassaProvider(
             account_id=settings.yookassa_shopid,

@@ -230,13 +230,13 @@ async def handle_active_subscription(client, subscription):
     # Проверка истечения срока подписки
     if current_time > end_date:
         # Подписка истекла, меняем статус на "expired"
-        data = {"status": "expired"}
+        status_data = {"status": "expired"}
         response = await client.put(
             settings.base_url + f"{subscription['id']}",
-            json=data,
+            json=status_data,
         )
 
-        if response.status_code == 200:
+        if response.status_code == httpx.codes.OK:
             print(
                 f"Подписка {subscription['id']} истекла "
                 f"и статус успешно изменён."

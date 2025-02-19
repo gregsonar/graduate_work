@@ -90,4 +90,4 @@ class SubscriptionService:
     async def get_all_subscription(self, query_dict: Optional[dict] = None) -> List:
         if query_dict is None:
             query_dict = {}
-        return await self.repository.list_subscriptions(**query_dict)
+        return await self.repository.list_subscriptions(**query_dict or {})

@@ -39,10 +39,11 @@ async def subscript_process(payment, tariff, response_text):
             # Проверка статуса ответа
             if response.status_code == httpx.codes.NOT_FOUND:
                 # Подписка отсутствует, создаем новую
-                await create_subscription(client, payment, tariff)
+                return await create_subscription(client, payment, tariff)
             elif response.status_code == httpx.codes.OK:
                 # Подписка существует, обновим её
                 await update_subscription(client, response.json(), tariff)
+                return response.json()['id']
             else:
                 logger.warning(
                     f"Something went wrong with the subscription API. "
@@ -78,12 +79,15 @@ async def create_subscription(client, payment, tariff):
 
     if response.status_code == httpx.codes.CREATED:
         logger.info("Subscription created successfully")
+        return  response.json()['id']
     else:
         logger.error(
             f"Failed to create subscription. "
             f"Status code: {response.status_code}. "
             f"Response text: {response.text}"
         )
+
+
 
 
 async def update_subscription(client, subscription_data, tariff):
@@ -137,6 +141,7 @@ async def update_subscription(client, subscription_data, tariff):
     # Обработка ответа
     if response.status_code == httpx.codes.OK:
         logger.info(log_message)
+        return subscription_data['id']
     else:
         logger.error(
             f"Failed to update subscription. "
@@ -274,26 +279,27 @@ async def fetch_due_subscriptions():
 @celery.task(bind=True, max_retries=3, default_retry_delay=60 * 5)
 def process_autopayment(self, subscription):
     """Обрабатывает автоплатёж для подписки"""
-    required_keys = ["id", "payment_method_id", "amount"]
+    # required_keys = ["id", "payment_method_id", "amount"]
+    required_keys = ["id", "price"]
     if not all(key in subscription for key in required_keys):
         logger.error("Subscription data is missing required keys")
         return
 
     try:
         subscription_id = subscription["id"]
-        payment_method_id = subscription["payment_method_id"]
-        amount = subscription["amount"]
+        # payment_method_id = subscription["payment_method_id"]
+        amount = subscription["price"]
 
-        if not payment_method_id:
-            logger.error(f"No saved payment method for subscription {subscription_id}")
-            return
+        # if not payment_method_id:
+        #     logger.error(f"No saved payment method for subscription {subscription_id}")
+        #     return
 
         # Создаём платёж через YooKassa
         payment_data = provider.make_recurrent_payment(
             amount=amount,
             currency="RUB",
             description=f"Autopayment for subscription {subscription_id}",
-            payment_method_id=payment_method_id,
+            # payment_method_id=payment_method_id,
             capture=True
         )
 
@@ -304,10 +310,11 @@ def process_autopayment(self, subscription):
             status=payment_data["status"],
             created_at=datetime.now(UTC)
         )
+        session = get_sync_session()
         try:
-            db.session.add(payment)
+            session.add(payment)
         finally:
-            db.session.commit()
+            session.commit()
 
         logger.info(f"Autopayment {payment_data['id']} created for subscription {subscription_id}")
 

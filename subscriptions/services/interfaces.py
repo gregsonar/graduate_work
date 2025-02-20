@@ -21,6 +21,10 @@ class ISubscriptionRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_with_user_id(self, user_id: UUID) -> SubscriptionResponse:
+        pass
+
+    @abstractmethod
     async def update(self, subscription_id: UUID, data: dict) -> SubscriptionResponse:
         pass
 

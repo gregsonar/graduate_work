@@ -45,6 +45,7 @@ def demo_successful_payment():
         payment = provider.create_payment(
             amount=100.00,
             description="Успешный тестовый платеж",
+            save_payment_method=True,
             metadata={ # https://yookassa.ru/developers/api#create_payment_metadata
                 "some_key": "some_value",
                 "order_id": "123"
@@ -158,9 +159,62 @@ def demo_idempotency():
         print(f"Ошибка: {e}")
 
 
+def demo_recurrent_payments():
+    print("=== ТЕСТ 4: СОХРАНЕНИЕ ДАННЫХ И АВТОПЛАТЕЖ ===")
+    current_status = None
+    try:
+        # Для успешных платежей используем тестовую карту 5555 5555 5555 4444 или кошелёк
+        # Для отмены транзакции на стороне ЮКассы используем карту 4119 0988 7879 6485 (причина отмены: fraud_suspected)
+        idempotence_key = uuid.uuid4()
+        payment = provider.create_payment(
+            amount=10.00,
+            description="Оплата подписки",
+            save_payment_method=True,
+            metadata={  # https://yookassa.ru/developers/api#create_payment_metadata
+                "some_key": "some_value",
+                "order_id": "123"
+            },
+            idempotence_key=idempotence_key
+        )
+    except PaymentCreationError as e:
+        print(f"Ошибка: {e}")
+
+    current_status = payment['status']
+    if current_status == 'pending':
+        print("Создан платеж:")
+        pprint(payment)
+
+    while True:
+        input('Платёж произведён?')
+        payment = provider.get_payment(payment['id'])
+        current_status = payment['status']
+        print(f"Статус платежа: {current_status}")
+        if current_status == 'waiting_for_capture':
+            print("\nПроизводим принятие платежа:")
+            capture = provider.capture_payment(payment['id'])
+            pprint(capture)
+            current_status = capture['status']
+        if current_status == 'succeeded':
+            print("Платёж успешно проведён")
+            break
+        elif current_status == 'pending':
+            print("Платёж в обработке (pending).")
+        elif current_status == 'canceled':
+            print("Платёж отклонён (canceled)!")
+            break
+        else:
+            raise PaymentCaptureError('Ошибка принятия платежа')
+
+    while True:  # 2f3ef10f-000f-5000-8000-1289b76990f7
+        print(f'Сохранённые данные платежа: {capture.payment_methods.id}')
+        input('Повторить платёж?')
+        recurrent_payment = provider.capture_payment(payment['id'])
+
+
 if __name__ == "__main__":
     # demo_successful_payment()
     # print_separator()
     # demo_cancelled_by_shop_payment()
     # print_separator()
-    demo_idempotency()
+    # demo_idempotency()
+    demo_recurrent_payments()

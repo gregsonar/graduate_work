@@ -26,7 +26,7 @@ class SubscriptionPlan(Base):
     duration_days = Column(Integer, nullable=False)
     features = Column(JSONB, default={})
     is_active = Column(Boolean, default=True)
-    subscriptions = relationship("Subscription", back_populates="plan")
+    # subscriptions = relationship("Subscription", back_populates="plan")
 
 class Subscription(Base):
 
@@ -38,12 +38,8 @@ class Subscription(Base):
     end_date = Column(DateTime(timezone=True), nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     is_auto_renewable = Column(Boolean, default=False)
-    plan_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey('subscription_plans.id', ondelete='SET NULL'),
-        nullable=True
-    )
-    plan = relationship("SubscriptionPlan", back_populates="subscriptions")
+    plan_id = Column(UUID(as_uuid=True), nullable=True)
+    # plan = relationship("SubscriptionPlan", back_populates="subscriptions")
     history = relationship("SubscriptionHistory", back_populates="subscription", cascade="all, delete-orphan")
     user_subscriptions = relationship("UserSubscription", back_populates="subscription")
 

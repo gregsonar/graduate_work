@@ -1,0 +1,98 @@
+services:
+
+  postgres:
+    image: postgres:16.1
+    container_name: admin-postgres
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123qwe
+      POSTGRES_DB: billing_db
+    networks:
+      - backend_billing
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${BILLING_POSTGRES_USER} -d ${BILLING_POSTGRES_DB}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+
+  billing-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.billing
+    container_name: billing-api
+    environment:
+      - DEBUG=True
+    command: >
+      sh -c "cd billing &&
+             ls &&
+             alembic upgrade head &&
+             gunicorn src.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"
+    depends_on:
+        postgres:
+            condition: service_healthy
+    env_file:
+      - billing/.env
+    networks:
+      - backend_billing
+      - backend
+      - subscription_network
+      - auth_network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.billing
+    container_name: celery-workers
+    command: >
+      sh -c "cd billing/src &&
+             ls &&
+             celery -A tasks.celery worker --loglevel=info"
+    depends_on:
+      - billing-api
+      - redis_billing
+    env_file:
+      - billing/.env
+    networks:
+      - backend_billing
+      - subscription_network
+      - auth_network
+
+  worker_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.billing
+    container_name: celery-beat
+    command: >
+      sh -c "cd billing/src &&
+             ls &&
+             celery -A tasks.celery beat --loglevel=info"
+    depends_on:
+      - billing-api
+      - redis_billing
+    env_file:
+      - billing/.env
+    networks:
+      - backend_billing
+      - subscription_network
+      - auth_network
+
+  redis_billing:
+    image: redis:7
+    command: --port 6380
+    ports:
+      - "6380:6379"
+    networks:
+      - backend_billing
+
+volumes:
+  db:
+
+networks:
+  backend_billing:
+    driver: bridge
+    name: backend_billing

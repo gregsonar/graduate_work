@@ -1,4 +1,5 @@
 import logging
+import datetime
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,17 +27,17 @@ router = APIRouter()
 @router.post("/", response_model=SubscriptionResponse)
 async def create_subscription(
         data: SubscriptionCreate,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Create a new subscription for the current user"""
     subscription_service = SubscriptionService(session)
     try:
-        logger.info(current_user)
-        data.user_id = UUID(str(current_user["id"]))
+        # logger.info(current_user)
+        # data.user_id = UUID(str(current_user["id"]))
         return await subscription_service.create_subscription(data)
     except KeyError:
-        logger.error(f"User data is missing ID field. User data: {current_user}")
+        # logger.error(f"User data is missing ID field. User data: {current_user}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Invalid user data structure received from auth service"
@@ -52,18 +53,35 @@ async def create_subscription(
 @router.get("/{subscription_id}", response_model=SubscriptionResponse)
 async def get_subscription(
         subscription_id: UUID,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Get subscription details"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
+    return subscription
+
+@router.get("/user/{user_id}", response_model=SubscriptionResponse)
+async def get_subscription_with_user_id(
+        user_id: UUID,
+        # current_user=Depends(get_current_user),
+        session: AsyncSession = Depends(get_session)
+):
+    """Get subscription details"""
+    subscription_service = SubscriptionService(session)
+    subscription = await subscription_service.get_subscription_with_user_id(user_id)
+
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
     return subscription
 
 
@@ -71,18 +89,18 @@ async def get_subscription(
 async def update_subscription(
         subscription_id: UUID,
         data: SubscriptionUpdate,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Update subscription details"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
     return await subscription_service.update_subscription(subscription_id, data)
 
 
@@ -90,18 +108,18 @@ async def update_subscription(
 async def suspend_subscription(
         subscription_id: UUID,
         data: SubscriptionSuspend,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Suspend an active subscription"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
 
     await subscription_service.suspend_subscription(subscription_id, data.reason)
     return DetailResponse(detail="Subscription suspended successfully", code="SUBSCRIPTION_SUSPENDED")
@@ -111,18 +129,18 @@ async def suspend_subscription(
 async def resume_subscription(
         subscription_id: UUID,
         data: SubscriptionResume,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Resume a suspended subscription"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
 
     await subscription_service.resume_subscription(subscription_id, data.comment)
     return DetailResponse(detail="Subscription resumed successfully", code="SUBSCRIPTION_RESUMED")
@@ -132,18 +150,18 @@ async def resume_subscription(
 async def cancel_subscription(
         subscription_id: UUID,
         data: SubscriptionCancel,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Cancel a subscription"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
 
     await subscription_service.cancel_subscription(subscription_id, data.reason, data.immediate)
     return DetailResponse(detail="Subscription cancelled successfully", code="SUBSCRIPTION_CANCELLED")
@@ -152,18 +170,18 @@ async def cancel_subscription(
 @router.get("/{subscription_id}/history", response_model=list[SubscriptionHistoryResponse])
 async def get_subscription_history(
         subscription_id: UUID,
-        current_user=Depends(get_current_user),
+        # current_user=Depends(get_current_user),
         session: AsyncSession = Depends(get_session)
 ):
     """Get subscription history"""
     subscription_service = SubscriptionService(session)
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this subscription"
-        )
+    # if str(subscription.user_id) != current_user["id"] and "admin" not in current_user["roles"]:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Access denied to this subscription"
+    #     )
 
     return await subscription_service.get_subscription_history(subscription_id)
 
@@ -171,7 +189,7 @@ async def get_subscription_history(
 # Admin endpoints
 @router.get("/admin/all", response_model=list[SubscriptionResponse])
 async def list_all_subscriptions(
-        admin_user=Depends(get_admin_user),
+        # admin_user=Depends(get_admin_user),
         session: AsyncSession = Depends(get_session)
 ):
     """List all subscriptions (admin only)"""
@@ -188,3 +206,12 @@ async def get_user_subscriptions(
     """Get all subscriptions for a specific user (admin only)"""
     subscription_service = SubscriptionService(session)
     return await subscription_service.get_all_subscription({"user_id": user_id})
+
+@router.get("/admin/due", response_model=list[SubscriptionResponse])
+async def get_user_subscriptions(
+        # admin_user=Depends(get_admin_user),
+        session: AsyncSession = Depends(get_session)
+):
+    """Get all subscriptions with today's payment date (admin only)"""
+    subscription_service = SubscriptionService(session)
+    return await subscription_service.get_all_subscription({"end_date": datetime.date.today()})

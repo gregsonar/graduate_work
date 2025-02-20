@@ -32,6 +32,10 @@ class SubscriptionService:
         subscription = await self.repository.get(subscription_id)
         return SubscriptionResponse.model_validate(subscription)
 
+    async def get_subscription_with_user_id(self, user_id: UUID) -> SubscriptionResponse:
+        subscription = await self.repository.get_with_user_id(user_id)
+        return SubscriptionResponse.model_validate(subscription)
+
     async def update_subscription(
         self,
         subscription_id: UUID,
@@ -83,5 +87,7 @@ class SubscriptionService:
     ) -> list[SubscriptionHistoryResponse]:
         return await self.history_manager.get_history(subscription_id)
 
-    async def get_all_subscription(self, query_dict: Optional[dict]) -> List:
-        return await self.repository.list_subscriptions(**query_dict)
+    async def get_all_subscription(self, query_dict: Optional[dict] = None) -> List:
+        if query_dict is None:
+            query_dict = {}
+        return await self.repository.list_subscriptions(**query_dict or {})

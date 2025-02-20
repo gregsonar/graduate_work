@@ -162,42 +162,28 @@ async def subscribe(payment_model_id, payment_id, payment_status):
     delay_in_seconds = settings.check_delay_in_seconds
 
     while True:
+
         time.sleep(delay_in_seconds)
         logging.info(f'Try #{tries}')
 
         new_payment_data = provider.get_payment(payment_id)
 
-        if new_payment_data.get('status') != payment_status:
+        if new_payment_data.get('status') == "CANCELED":
+            return
 
+        if new_payment_data.get('status') == PaymentStatus.WAITING_FOR_CAPTURE:
             session = get_sync_session()
             payment = session.get(PaymentModel, payment_model_id)
             tariff = session.get(TariffModel, payment.tariff_id)
 
-            response_text = f"Payment {payment.payment_id} changed the status."
+            payment.status = new_payment_data.get('status')
+            payment.method_id = new_payment_data.get('payment_method_id')
 
-            if new_payment_data.get('status') == repr(PaymentStatus.SUCCEEDED):
-                payment.status = new_payment_data.get('status')
-                response_text = await subscript_process(payment, tariff)
-                session.add(payment)
-
-            elif new_payment_data.get('status') == repr(
-                    PaymentStatus.WAITING_FOR_CAPTURE
-            ):
-                new_payment_data = provider.capture_payment(
-                    payment_id=new_payment_data.get('id')
-                )
-                loop = asyncio.get_event_loop()
-                response_text = loop.run_until_complete(
-                    subscript_process(payment, tariff)
-                )
-                payment.status = new_payment_data.get('status')
-                response_text = loop.run_until_complete(
-                    subscript_process(payment, tariff)
-                )
-                session.add(payment)
-
+            await subscript_process(payment, tariff)
+            session.add(payment)
             session.commit()
-            return response_text
+
+            return
 
         tries += 1
         delay_in_seconds += delay_in_seconds
@@ -300,6 +286,7 @@ def process_autopayment(self, subscription):
         #     logger.error(f"No saved payment method for subscription {subscription_id}")
         #     return
 
+
         # Создаём платёж через YooKassa
         payment_data = provider.make_recurrent_payment(
             amount=amount,
@@ -335,6 +322,7 @@ def process_autopayment(self, subscription):
             self.retry()
 
     except Exception as e:
+        print(e)
         logger.error(f"Error processing autopayment for subscription {subscription_id}: {e}")
         self.retry(exc=e)
 
@@ -342,12 +330,10 @@ def process_autopayment(self, subscription):
 @celery.task
 def schedule_autopayments():
     """Запрашивает подписки и создаёт задачи на автоплатежи"""
-    print('f' * 100)
     loop = asyncio.get_event_loop()
     subscriptions = loop.run_until_complete(fetch_due_subscriptions())
 
     for subscription in subscriptions:
-        pprint(subscription)
         process_autopayment.delay(subscription)
 
     logger.info(f"Scheduled {len(subscriptions)} autopayments")

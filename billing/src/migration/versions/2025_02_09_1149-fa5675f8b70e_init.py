@@ -141,6 +141,7 @@ def upgrade() -> None:
     sa.Column('payment_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('subscription_id', sa.UUID(), nullable=False),
+    sa.Column('method_id', sa.UUID(), nullable=True),
     sa.Column(
         'created',
         sa.DateTime(timezone=True),

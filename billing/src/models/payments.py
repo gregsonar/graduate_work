@@ -20,6 +20,7 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
     status = Column(String)
     payment_id = Column(UUID, nullable=False)
     subscription_id = Column(UUID, nullable=False)
+    method_id = Column(UUID, nullable=True)
 
     def __repr__(self):
         return f'<PaymentModel {self.id}>'

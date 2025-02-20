@@ -23,7 +23,6 @@ celery = Celery(
     backend=settings.celery_broker_url,
 )
 
-# Инициализация YooKassa провайдера
 provider = YooKassaProvider(
     account_id='1023840',
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
@@ -138,7 +137,6 @@ class SubscriptionManager:
         if subscription_data['status'] == 'pending':
             return {'status': 'active'}
 
-        # Active subscription case
         old_end_date = datetime.fromisoformat(subscription_data['end_date'].replace('Z', '+00:00'))
         new_end_date = old_end_date + timedelta(days=tariff.duration)
 
@@ -211,10 +209,17 @@ class AutoPaymentManager:
         logger.info(f"Starting process_single_payment for subscription {subscription['id']}")
         logger.info(f"Initial payment_id: {payment_id}")
 
+        required_keys = ["id", "price", "user_id", "plan_id"]
+        if not all(key in subscription for key in required_keys):
+            logger.error(f"Subscription {subscription.get('id')} missing required keys")
+            raise ValueError("Missing required subscription data")
+
         try:
             if payment_id:
                 logger.info(f"Checking existing payment with ID: {payment_id}")
-                payment_data = self.provider.get_payment(payment_id)
+                print("4" * 100)
+                payment_data = self.provider.get_payment(str(payment_id))
+                print("5" * 100)
                 if not payment_data:
                     logger.error(f"Payment {payment_id} not found in YooKassa")
                     raise ValueError(f"Payment {payment_id} not found")
@@ -228,19 +233,28 @@ class AutoPaymentManager:
 
             if payment_data["status"] == "succeeded":
                 logger.info(f"Payment {payment_data['id']} succeeded")
+                self._update_payment_status(payment_data['id'], "succeeded")
+                subscribe.delay(payment_data['id'], payment_data["status"])
                 return payment_data["id"]
-            elif payment_data["status"] in ["pending", "waiting_for_capture"]:
-                logger.info(f"Payment {payment_data['id']} is {payment_data['status']}")
-                return payment_data["id"]  # Возвращаем ID даже для незавершенных платежей
+
+            elif payment_data["status"] == "waiting_for_capture":
+                logger.info(f"Payment {payment_data['id']} is waiting for capture")
+                self._update_payment_status(payment_data['id'], "waiting_for_capture")
+                return payment_data["id"]
+
+            elif payment_data["status"] == "pending":
+                logger.info(f"Payment {payment_data['id']} is pending")
+                raise ValueError("Payment not completed: pending")
+
             else:
-                logger.error(f"Payment {payment_data['id']} failed with status {payment_data['status']}")
+                logger.error(f"Payment {payment_data['id']} has unexpected status: {payment_data['status']}")
                 raise ValueError(f"Payment failed: {payment_data['status']}")
 
+        except ValueError as e:
+            logger.warning(f"Payment processing warning: {str(e)}")
+            raise
         except Exception as e:
-            logger.error(
-                f"Error processing autopayment for subscription {subscription['id']}: {str(e)}",
-                exc_info=True
-            )
+            logger.error(f"Error processing payment: {str(e)}", exc_info=True)
             raise
 
     def _create_payment(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
@@ -249,8 +263,7 @@ class AutoPaymentManager:
         payment_data = self.provider.make_recurrent_payment(
             amount=subscription["price"],
             currency="RUB",
-            description=f"Autopayment for subscription {subscription['id']}",
-            capture=True
+            description=f"Autopayment for subscription {subscription['id']}"
         )
         logger.info(f"Payment created in YooKassa: {payment_data.get('id')}")
         return payment_data
@@ -281,68 +294,50 @@ class AutoPaymentManager:
                 logger.error(f"Error saving payment to DB: {e}")
                 raise
 
+    def _update_payment_status(self, payment_id: str, status: str) -> None:
+        """Update payment status in database."""
+        with self.session_factory() as session:
+            try:
+                payment = session.query(PaymentModel).filter(
+                    PaymentModel.payment_id == payment_id
+                ).first()
+                if payment:
+                    payment.status = status
+                    session.commit()
+                    logger.info(f"Payment {payment_id} status updated to {status}")
+            except Exception as e:
+                session.rollback()
+                logger.error(f"Error updating payment status: {e}")
+                raise
 
-# Celery tasks
+
 @celery.task(name="Check payment status & subscribe")
-async def subscribe(payment_model_id: int, payment_id: str, payment_status: str) -> None:
-    logger.info(f"Starting subscribe task. Payment ID: {payment_id}, Initial status: {payment_status}")
+async def subscribe(payment_id: str, payment_status: str) -> None:
+    """Handle subscription process after payment."""
+    logger.info(f"Starting subscribe task for payment {payment_id} with status {payment_status}")
 
-    delay_in_seconds = settings.check_delay_in_seconds
-    max_tries = 3
-    tries = 0
-
-    while tries < max_tries:
-        tries += 1
-        await asyncio.sleep(delay_in_seconds)
-        logger.info(f'Processing payment attempt #{tries} for payment {payment_id}')
-
-        try:
-            new_payment_data = provider.get_payment(payment_id)
-            logger.info(f"Payment {payment_id} current status: {new_payment_data.get('status')}")
-
-            if new_payment_data.get('status') == "CANCELED":
-                logger.warning(f"Payment {payment_id} was canceled")
-                return
-
-            if new_payment_data.get('status') == PaymentStatus.WAITING_FOR_CAPTURE:
-                logger.info(f"Payment {payment_id} is ready for capture")
-                await _handle_capture_ready_payment(payment_model_id, new_payment_data)
-                return
-
-            if new_payment_data.get('status') == "succeeded":
-                logger.info(f"Payment {payment_id} succeeded, processing subscription")
-                await _handle_capture_ready_payment(payment_model_id, new_payment_data)
-                return
-
-            logger.warning(f"Payment {payment_id} has unexpected status: {new_payment_data.get('status')}")
-
-        except Exception as e:
-            logger.error(f"Error processing payment {payment_id}: {str(e)}", exc_info=True)
-
-        delay_in_seconds *= 2
-
-
-async def _handle_capture_ready_payment(
-        payment_model_id: int,
-        payment_data: Dict[str, Any]
-) -> None:
-    """Handle payment that is ready for capture."""
     session = get_sync_session()
     try:
-        payment = session.get(PaymentModel, payment_model_id)
+        payment = session.query(PaymentModel).filter(
+            PaymentModel.payment_id == payment_id
+        ).first()
+
+        if not payment:
+            logger.error(f"Payment {payment_id} not found in database")
+            return
+
         tariff = session.get(TariffModel, payment.tariff_id)
 
-        payment.status = payment_data.get('status')
-        payment.method_id = payment_data.get('payment_method_id')
+        if payment_status == "succeeded":
+            async with SubscriptionManager(settings.base_url) as subscription_manager:
+                await subscription_manager.subscript_process(payment, tariff)
+                logger.info(f"Subscription processed for payment {payment_id}")
 
-        async with SubscriptionManager(settings.base_url) as subscription_manager:
-            await subscription_manager.subscript_process(payment, tariff)
-
-        session.add(payment)
         session.commit()
+
     except Exception as e:
         session.rollback()
-        logger.error(f"Error handling capture-ready payment: {e}")
+        logger.error(f"Error in subscribe task: {e}", exc_info=True)
         raise
     finally:
         session.close()
@@ -359,7 +354,7 @@ def check_subscriptions_expiration():
     asyncio.run(_run_check())
 
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=30)
+@celery.task(bind=True, max_retries=3, default_retry_delay=10)
 def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional[str] = None) -> None:
     """Process autopayment for a subscription."""
     logger.info(f"Starting process_autopayment task for subscription {subscription['id']}")
@@ -369,106 +364,87 @@ def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional
 
     try:
         if not payment_id:
+            print("1" * 100)
             with payment_manager.session_factory() as session:
                 logger.info("Checking recent payments in DB")
                 recent_payment = session.query(PaymentModel).filter(
                     PaymentModel.subscription_id == subscription['id']
                 ).order_by(PaymentModel.created.desc()).first()
-
+                print("2" * 100)
                 if recent_payment:
                     logger.info(f"Found recent payment in DB: {recent_payment.payment_id}")
                     payment_id = recent_payment.payment_id
                 else:
                     logger.info("No recent payments found in DB")
-
+        print("3" * 100)
         processed_payment_id = payment_manager.process_single_payment(subscription, payment_id)
         logger.info(f"Payment processed successfully: {processed_payment_id}")
         return processed_payment_id
 
     except ValueError as e:
         if "not completed" in str(e):
-            logger.info(f"Payment not completed, retrying. Error: {str(e)}")
-            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
-        else:
-            logger.error(f"Validation error: {str(e)}")
-            raise
+            logger.info(f"Payment not completed, retrying in {self.default_retry_delay} seconds")
+            self.retry(exc=e, countdown=self.default_retry_delay)
+        raise
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        if payment_id:
-            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
-        else:
-            raise
-
-    except ValueError as e:
-        if "not completed" in str(e):  # Платеж в процессе
-            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
-        else:  # Другие ошибки валидации
-            logger.error(f"Validation error in autopayment: {e}")
-            raise
-    except Exception as e:
-        print(e)
-        if payment_id:  # Если платеж уже создан, проверяем его снова
-            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
-        else:
-            logger.error(f"Critical error in autopayment: {e}")
-            raise
+        self.retry(exc=e)
 
 
 @celery.task
 def schedule_autopayments() -> None:
-    """Schedule autopayments for due subscriptions."""
-    payment_manager = AutoPaymentManager(provider, get_sync_session)
+   """Schedule autopayments for due subscriptions."""
+   payment_manager = AutoPaymentManager(provider, get_sync_session)
 
-    # Получаем активные задачи
-    active_tasks = celery.control.inspect().active()
-    if active_tasks is None:
-        active_tasks = {}
+   # Получаем активные задачи
+   active_tasks = celery.control.inspect().active()
+   if active_tasks is None:
+       active_tasks = {}
 
-    # Собираем subscription_ids из активных задач
-    active_subscription_ids = set()
-    for worker_tasks in active_tasks.values():
-        for task in worker_tasks:
-            if task['name'] == 'tasks.process_autopayment':
-                try:
-                    subscription_id = task['kwargs'].get('subscription', {}).get('id')
-                    if subscription_id:
-                        active_subscription_ids.add(subscription_id)
-                except (KeyError, AttributeError):
-                    continue
+   # Собираем subscription_ids из активных задач
+   active_subscription_ids = set()
+   for worker_tasks in active_tasks.values():
+       for task in worker_tasks:
+           if task['name'] == 'tasks.process_autopayment':
+               try:
+                   subscription_id = task['kwargs'].get('subscription', {}).get('id')
+                   if subscription_id:
+                       active_subscription_ids.add(subscription_id)
+               except (KeyError, AttributeError):
+                   continue
 
-    # Получаем подписки для оплаты
-    subscriptions = asyncio.run(payment_manager.fetch_due_subscriptions())
+   # Получаем подписки для оплаты
+   subscriptions = asyncio.run(payment_manager.fetch_due_subscriptions())
 
-    scheduled_count = 0
-    for subscription in subscriptions:
-        # Проверяем, нет ли уже активной задачи для этой подписки
-        if subscription['id'] not in active_subscription_ids:
-            # Проверяем, нет ли недавних платежей в БД
-            with payment_manager.session_factory() as session:
-                recent_payment = session.query(PaymentModel).filter(
-                    PaymentModel.subscription_id == subscription['id']
-                    # ,
-                    # PaymentModel.created >= datetime.now(timezone.utc) - timedelta(minutes=5)
-                ).first()
+   scheduled_count = 0
+   for subscription in subscriptions:
+       # Проверяем, нет ли уже активной задачи для этой подписки
+       if subscription['id'] not in active_subscription_ids:
+           # Проверяем, нет ли недавних платежей в БД
+           with payment_manager.session_factory() as session:
+               recent_payment = session.query(PaymentModel).filter(
+                   PaymentModel.subscription_id == subscription['id'],
+                   PaymentModel.created >= datetime.now(timezone.utc) - timedelta(minutes=5)
+               ).first()
 
-                if not recent_payment:
-                    process_autopayment.delay(subscription)
-                    scheduled_count += 1
+               if not recent_payment:
+                   process_autopayment.delay(subscription)
+                   scheduled_count += 1
 
-    if scheduled_count > 0:
-        logger.info(f"Scheduled {scheduled_count} new autopayments")
-    else:
-        logger.debug("No new autopayments needed")
+   if scheduled_count > 0:
+       logger.info(f"Scheduled {scheduled_count} new autopayments")
+   else:
+       logger.debug("No new autopayments needed")
 
 
 # Configure periodic tasks
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(
-        crontab(minute='0', hour='0'),
-        check_subscriptions_expiration.s(),
-    )
-    sender.add_periodic_task(
-        crontab(minute='*/1'),
-        schedule_autopayments.s(),
-    )
+   sender.add_periodic_task(
+       crontab(minute='0', hour='0'),
+       check_subscriptions_expiration.s(),
+   )
+   sender.add_periodic_task(
+       crontab(minute='*/1'),
+       schedule_autopayments.s(),
+   )

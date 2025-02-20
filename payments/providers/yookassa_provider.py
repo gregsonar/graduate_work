@@ -1,17 +1,19 @@
 # реализация провайдера платежей для YooKassa
 
 import json
+import logging
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 import requests
 from yookassa import Configuration, Payment
 
-from billing.src.tasks import logger
+
 from payments.providers.base import BasePaymentProvider
 from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
 
+logger = logging.getLogger(__name__)
 
 class YooKassaProvider(BasePaymentProvider):
     def __init__(self, account_id: str, secret_key: str):
@@ -80,15 +82,17 @@ class YooKassaProvider(BasePaymentProvider):
 
     def get_payment(self, payment_id: str) -> Dict[str, Any]:
         try:
-            print(payment_id)
+            print("6" * 100)
+            print(f"Payment id: {payment_id}")
             payment = Payment.find_one(payment_id)
+            print("7" * 100)
 
-            logger.info(f"Payment id: {payment.id}")
-            logger.info(f"Payment status: {payment.status}")
+            print(f"Payment id: {payment.id}")
+            print(f"Payment status: {payment.status}")
 
             # Преобразуем JSON-строку в словарь
             payment_data = json.loads(payment.json())
-            return YooKassaPaymentSchema(**payment_data).dict()
+            return YooKassaPaymentSchema(**payment_data).model_dump()
 
         except Exception as e:
             raise PaymentStatusError(f"Failed to get payment status: {str(e)}")

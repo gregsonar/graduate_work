@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 import requests
 from yookassa import Configuration, Payment
 
+from billing.src.tasks import logger
 from payments.providers.base import BasePaymentProvider
 from payments.exceptions import PaymentCreationError, PaymentCaptureError, PaymentStatusError
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
@@ -79,7 +80,11 @@ class YooKassaProvider(BasePaymentProvider):
 
     def get_payment(self, payment_id: str) -> Dict[str, Any]:
         try:
+            print(payment_id)
             payment = Payment.find_one(payment_id)
+
+            logger.info(f"Payment id: {payment.id}")
+            logger.info(f"Payment status: {payment.status}")
 
             # Преобразуем JSON-строку в словарь
             payment_data = json.loads(payment.json())

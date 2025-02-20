@@ -1,8 +1,8 @@
 import asyncio
 import logging
-import time
-from datetime import datetime, timedelta, timezone, UTC
+from datetime import datetime, timedelta, timezone
 from pprint import pprint
+from typing import Optional, Dict, List, Any
 
 import aiohttp
 import httpx
@@ -12,10 +12,8 @@ from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
 from celery import Celery
 from celery.schedules import crontab
-
-from payments.models.payment_jobs import PaymentJob
+from sqlalchemy.orm import Session
 from payments.providers.yookassa_provider import YooKassaProvider
-from payments import db
 
 logger = logging.getLogger(__name__)
 
@@ -25,170 +23,445 @@ celery = Celery(
     backend=settings.celery_broker_url,
 )
 
+# Инициализация YooKassa провайдера
 provider = YooKassaProvider(
     account_id='1023840',
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
 )
 
 
-async def subscript_process(payment, tariff):
-    async with httpx.AsyncClient() as client:
-        try:
-            # Получение информации о текущей подписке
-            response = await get_subscription(client, payment.user_id)
-            print("response" * 100)
-            print("response", response.json())
+class SubscriptionManager:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self._client: Optional[httpx.AsyncClient] = None
 
-            # Проверка статуса ответа
+    async def __aenter__(self):
+        self._client = httpx.AsyncClient()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._client:
+            await self._client.aclose()
+
+    async def get_subscription(self, user_id: str) -> httpx.Response:
+        """Fetch subscription information for a user."""
+        return await self._client.get(f"{self.base_url}user/{user_id}")
+
+    async def subscript_process(self, payment: PaymentModel, tariff: TariffModel) -> Optional[str]:
+        """Process subscription creation or update."""
+        try:
+            response = await self.get_subscription(payment.user_id)
+
             if response.status_code == httpx.codes.NOT_FOUND:
-                # Подписка отсутствует, создаем новую
-                return await create_subscription(client, payment, tariff)
+                return await self.create_subscription(payment, tariff)
             elif response.status_code == httpx.codes.OK:
-                # Подписка существует, обновим её
-                await update_subscription(client, response.json(), tariff)
+                await self.update_subscription(response.json(), tariff)
                 return response.json()['id']
             else:
                 logger.warning(
-                    f"Something went wrong with the subscription API. "
-                    f"Status code: {response.status_code}"
+                    f"Subscription API error. Status code: {response.status_code}"
                 )
+                return None
 
         except Exception as e:
             logger.exception(str(e))
-            return {"error": str(e)}
+            return None
 
+    async def create_subscription(self, payment: PaymentModel, tariff: TariffModel) -> str:
+        """Create a new subscription for a user."""
+        now_utc = datetime.now(timezone.utc)
+        end_date = now_utc + timedelta(days=tariff.duration)
 
-async def get_subscription(client, user_id):
-    return await client.get(settings.base_url + f"user/{user_id}")
-
-
-async def create_subscription(client, payment, tariff):
-    base_url = settings.base_url
-    # Получаем текущую дату и время в UTC
-    now_utc_datetime = datetime.now(timezone.utc)
-    end_date = now_utc_datetime + timedelta(days=tariff.duration)
-
-    # Данные для создания новой подписки
-    data = {
-        'user_id': str(payment.user_id),
-        'plan_type': tariff.name,
-        'start_date': now_utc_datetime.isoformat(),
-        'end_date': end_date.isoformat(),
-        'price': float(tariff.price),
-        'plan_id': str(tariff.id)
-    }
-
-    # Создание новой подписки
-    response = await client.post(base_url, json=data)
-
-    if response.status_code == httpx.codes.CREATED:
-        logger.info("Subscription created successfully")
-        print("create_subscription "* 100)
-        print(response.json()['id'])
-        return  response.json()['id']
-    else:
-        logger.error(
-            f"Failed to create subscription. "
-            f"Status code: {response.status_code}. "
-            f"Response text: {response.text}"
-        )
-
-
-
-
-async def update_subscription(client, subscription_data, tariff):
-    base_url = settings.base_url
-    # Получаем текущую дату и время в UTC
-    now_utc_datetime = datetime.now(timezone.utc)
-
-    # Данные для обновления подписки
-    data = {}
-
-    # Обновление подписки в зависимости от статуса
-    if subscription_data['status'] == 'expired':
-        # Подписка истекла, возобновляем её
         data = {
-            'status': 'active',
+            'user_id': str(payment.user_id),
             'plan_type': tariff.name,
-            'plan_id': str(tariff.id),
-            'end_date': (
-                now_utc_datetime + timedelta(days=tariff.duration)
-            ).strftime("%Y-%m-%dT%H:%M:%SZ")
-        }
-        log_message = "Expired subscription renewed successfully"
-    elif subscription_data['status'] == 'pending':
-        # Активируем подписку
-        data = {'status': 'active'}
-        log_message = "Subscription activated successfully"
-    elif subscription_data['status'] == 'active':
-        # Получаем текущую дату и время в UTC
-        old_end_date = datetime.strptime(
-            subscription_data['end_date'], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        new_end_date = old_end_date + timedelta(days=tariff.duration)
-        data = {
-            'end_date': new_end_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'start_date': now_utc.isoformat(),
+            'end_date': end_date.isoformat(),
+            'price': float(tariff.price),
+            'plan_id': str(tariff.id)
         }
 
-        # Проверка соответствия плана подписки текущему тарифу
-        if subscription_data['plan_type'] != tariff.name:
-            # План подписки отличается от нового тарифа, необходимо обновление
-            # Данные для обновления подписки
-            data['plan_type'] = tariff.name
-            log_message = "Plan type and end date updated successfully"
-        else:
-            log_message = "Subscription updated successfully"
+        response = await self._client.post(self.base_url, json=data)
 
-    # Обновление подписки
-    response = await client.put(
-        base_url + f"{subscription_data['id']}",
-        json=data,
-    )
+        if response.status_code == httpx.codes.CREATED:
+            logger.info("Subscription created successfully")
+            return response.json()['id']
 
-    # Обработка ответа
-    if response.status_code == httpx.codes.OK:
-        logger.info(log_message)
-        return subscription_data['id']
-    else:
         logger.error(
-            f"Failed to update subscription. "
-            f"Status code: {response.status_code}. "
-            f"Response text: {response.text}")
+            f"Failed to create subscription. Status: {response.status_code}. Response: {response.text}"
+        )
+        raise ValueError(f"Failed to create subscription: {response.text}")
+
+    async def update_subscription(
+            self,
+            subscription_data: Dict[str, Any],
+            tariff: TariffModel
+    ) -> str:
+        """Update an existing subscription."""
+        now_utc = datetime.now(timezone.utc)
+
+        data = self._prepare_subscription_update_data(
+            subscription_data,
+            tariff,
+            now_utc
+        )
+
+        response = await self._client.put(
+            f"{self.base_url}{subscription_data['id']}",
+            json=data
+        )
+
+        if response.status_code == httpx.codes.OK:
+            logger.info(f"Subscription {subscription_data['id']} updated successfully")
+            return subscription_data['id']
+
+        logger.error(
+            f"Failed to update subscription. Status: {response.status_code}. Response: {response.text}"
+        )
+        raise ValueError(f"Failed to update subscription: {response.text}")
+
+    @staticmethod
+    def _prepare_subscription_update_data(
+            subscription_data: Dict[str, Any],
+            tariff: TariffModel,
+            now_utc: datetime
+    ) -> Dict[str, Any]:
+        """Prepare data for subscription update based on current status."""
+        if subscription_data['status'] == 'expired':
+            return {
+                'status': 'active',
+                'plan_type': tariff.name,
+                'plan_id': str(tariff.id),
+                'end_date': (now_utc + timedelta(days=tariff.duration)).isoformat()
+            }
+
+        if subscription_data['status'] == 'pending':
+            return {'status': 'active'}
+
+        # Active subscription case
+        old_end_date = datetime.fromisoformat(subscription_data['end_date'].replace('Z', '+00:00'))
+        new_end_date = old_end_date + timedelta(days=tariff.duration)
+
+        data = {'end_date': new_end_date.isoformat()}
+
+        if subscription_data['plan_type'] != tariff.name:
+            data['plan_type'] = tariff.name
+
+        return data
+
+    async def check_subscriptions_expiration(self) -> None:
+        """Check and update expired subscriptions."""
+        try:
+            response = await self._client.get(f"{self.base_url}admin/all")
+            subscriptions = response.json()
+
+            for subscription in subscriptions:
+                if subscription["status"] == "active":
+                    await self._handle_active_subscription(subscription)
+
+        except Exception as e:
+            logger.error(f"Error checking subscriptions: {str(e)}")
+
+    async def _handle_active_subscription(self, subscription: Dict[str, Any]) -> None:
+        """Handle active subscription expiration check."""
+        end_date = datetime.fromisoformat(
+            subscription["end_date"].replace('Z', '+00:00')
+        )
+        current_time = datetime.now(timezone.utc)
+
+        if current_time > end_date:
+            status_data = {"status": "expired"}
+            response = await self._client.put(
+                f"{self.base_url}{subscription['id']}",
+                json=status_data,
+            )
+
+            if response.status_code == httpx.codes.OK:
+                logger.info(f"Subscription {subscription['id']} marked as expired")
+            else:
+                logger.error(
+                    f"Failed to update subscription {subscription['id']} status. "
+                    f"Status: {response.status_code}. Response: {response.text}"
+                )
 
 
+class AutoPaymentManager:
+    def __init__(self, payment_provider, session_factory):
+        self.provider = payment_provider
+        self.session_factory = session_factory
+
+    async def fetch_due_subscriptions(self) -> List[Dict[str, Any]]:
+        """Fetch subscriptions due for autopayment."""
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(
+                        f"{settings.base_url}admin/due",
+                        timeout=30
+                ) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    logger.error(f"Failed to fetch subscriptions, status: {response.status}")
+                    return []
+            except Exception as e:
+                logger.error(f"Error fetching subscriptions: {e}")
+                return []
+
+    def process_single_payment(self, subscription: Dict[str, Any], payment_id: Optional[str] = None) -> str:
+        """Process a single autopayment for a subscription."""
+        logger.info(f"Starting process_single_payment for subscription {subscription['id']}")
+        logger.info(f"Initial payment_id: {payment_id}")
+
+        try:
+            if payment_id:
+                logger.info(f"Checking existing payment with ID: {payment_id}")
+                payment_data = self.provider.get_payment(payment_id)
+                if not payment_data:
+                    logger.error(f"Payment {payment_id} not found in YooKassa")
+                    raise ValueError(f"Payment {payment_id} not found")
+            else:
+                logger.info("Creating new payment...")
+                payment_data = self._create_payment(subscription)
+                logger.info(f"New payment created with ID: {payment_data.get('id')}")
+                self._save_payment_to_db(payment_data, subscription)
+
+            logger.info(f"Payment data received: {payment_data}")
+
+            if payment_data["status"] == "succeeded":
+                logger.info(f"Payment {payment_data['id']} succeeded")
+                return payment_data["id"]
+            elif payment_data["status"] in ["pending", "waiting_for_capture"]:
+                logger.info(f"Payment {payment_data['id']} is {payment_data['status']}")
+                return payment_data["id"]  # Возвращаем ID даже для незавершенных платежей
+            else:
+                logger.error(f"Payment {payment_data['id']} failed with status {payment_data['status']}")
+                raise ValueError(f"Payment failed: {payment_data['status']}")
+
+        except Exception as e:
+            logger.error(
+                f"Error processing autopayment for subscription {subscription['id']}: {str(e)}",
+                exc_info=True
+            )
+            raise
+
+    def _create_payment(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a payment through the payment provider."""
+        logger.info(f"Creating payment for subscription: {subscription['id']}")
+        payment_data = self.provider.make_recurrent_payment(
+            amount=subscription["price"],
+            currency="RUB",
+            description=f"Autopayment for subscription {subscription['id']}",
+            capture=True
+        )
+        logger.info(f"Payment created in YooKassa: {payment_data.get('id')}")
+        return payment_data
+
+    def _save_payment_to_db(
+            self,
+            payment_data: Dict[str, Any],
+            subscription: Dict[str, Any]
+    ) -> None:
+        """Save payment information to database."""
+        payment = PaymentModel(
+            user_id=subscription["user_id"],
+            tariff_id=subscription["plan_id"],
+            status=payment_data["status"],
+            payment_id=payment_data["id"],
+            subscription_id=subscription["id"],
+        )
+
+        with self.session_factory() as session:
+            try:
+                session.add(payment)
+                session.commit()
+                logger.info(
+                    f"Payment {payment_data['id']} saved for subscription {subscription['id']}"
+                )
+            except Exception as e:
+                session.rollback()
+                logger.error(f"Error saving payment to DB: {e}")
+                raise
+
+
+# Celery tasks
 @celery.task(name="Check payment status & subscribe")
-async def subscribe(payment_model_id, payment_id, payment_status):
-    tries = 1
+async def subscribe(payment_model_id: int, payment_id: str, payment_status: str) -> None:
+    logger.info(f"Starting subscribe task. Payment ID: {payment_id}, Initial status: {payment_status}")
+
     delay_in_seconds = settings.check_delay_in_seconds
+    max_tries = 3
+    tries = 0
 
-    while True:
-
-        time.sleep(delay_in_seconds)
-        logging.info(f'Try #{tries}')
-
-        new_payment_data = provider.get_payment(payment_id)
-
-        if new_payment_data.get('status') == "CANCELED":
-            return
-
-        if new_payment_data.get('status') == PaymentStatus.WAITING_FOR_CAPTURE:
-            session = get_sync_session()
-            payment = session.get(PaymentModel, payment_model_id)
-            tariff = session.get(TariffModel, payment.tariff_id)
-
-            payment.status = new_payment_data.get('status')
-            payment.method_id = new_payment_data.get('payment_method_id')
-
-            await subscript_process(payment, tariff)
-            session.add(payment)
-            session.commit()
-
-            return
-
+    while tries < max_tries:
         tries += 1
-        delay_in_seconds += delay_in_seconds
+        await asyncio.sleep(delay_in_seconds)
+        logger.info(f'Processing payment attempt #{tries} for payment {payment_id}')
+
+        try:
+            new_payment_data = provider.get_payment(payment_id)
+            logger.info(f"Payment {payment_id} current status: {new_payment_data.get('status')}")
+
+            if new_payment_data.get('status') == "CANCELED":
+                logger.warning(f"Payment {payment_id} was canceled")
+                return
+
+            if new_payment_data.get('status') == PaymentStatus.WAITING_FOR_CAPTURE:
+                logger.info(f"Payment {payment_id} is ready for capture")
+                await _handle_capture_ready_payment(payment_model_id, new_payment_data)
+                return
+
+            if new_payment_data.get('status') == "succeeded":
+                logger.info(f"Payment {payment_id} succeeded, processing subscription")
+                await _handle_capture_ready_payment(payment_model_id, new_payment_data)
+                return
+
+            logger.warning(f"Payment {payment_id} has unexpected status: {new_payment_data.get('status')}")
+
+        except Exception as e:
+            logger.error(f"Error processing payment {payment_id}: {str(e)}", exc_info=True)
+
+        delay_in_seconds *= 2
 
 
+async def _handle_capture_ready_payment(
+        payment_model_id: int,
+        payment_data: Dict[str, Any]
+) -> None:
+    """Handle payment that is ready for capture."""
+    session = get_sync_session()
+    try:
+        payment = session.get(PaymentModel, payment_model_id)
+        tariff = session.get(TariffModel, payment.tariff_id)
+
+        payment.status = payment_data.get('status')
+        payment.method_id = payment_data.get('payment_method_id')
+
+        async with SubscriptionManager(settings.base_url) as subscription_manager:
+            await subscription_manager.subscript_process(payment, tariff)
+
+        session.add(payment)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error handling capture-ready payment: {e}")
+        raise
+    finally:
+        session.close()
+
+
+@celery.task()
+def check_subscriptions_expiration():
+    """Check and process expired subscriptions."""
+
+    async def _run_check():
+        async with SubscriptionManager(settings.base_url) as manager:
+            await manager.check_subscriptions_expiration()
+
+    asyncio.run(_run_check())
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=30)
+def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional[str] = None) -> None:
+    """Process autopayment for a subscription."""
+    logger.info(f"Starting process_autopayment task for subscription {subscription['id']}")
+    logger.info(f"Input payment_id: {payment_id}")
+
+    payment_manager = AutoPaymentManager(provider, get_sync_session)
+
+    try:
+        if not payment_id:
+            with payment_manager.session_factory() as session:
+                logger.info("Checking recent payments in DB")
+                recent_payment = session.query(PaymentModel).filter(
+                    PaymentModel.subscription_id == subscription['id']
+                ).order_by(PaymentModel.created.desc()).first()
+
+                if recent_payment:
+                    logger.info(f"Found recent payment in DB: {recent_payment.payment_id}")
+                    payment_id = recent_payment.payment_id
+                else:
+                    logger.info("No recent payments found in DB")
+
+        processed_payment_id = payment_manager.process_single_payment(subscription, payment_id)
+        logger.info(f"Payment processed successfully: {processed_payment_id}")
+        return processed_payment_id
+
+    except ValueError as e:
+        if "not completed" in str(e):
+            logger.info(f"Payment not completed, retrying. Error: {str(e)}")
+            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
+        else:
+            logger.error(f"Validation error: {str(e)}")
+            raise
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        if payment_id:
+            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
+        else:
+            raise
+
+    except ValueError as e:
+        if "not completed" in str(e):  # Платеж в процессе
+            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
+        else:  # Другие ошибки валидации
+            logger.error(f"Validation error in autopayment: {e}")
+            raise
+    except Exception as e:
+        print(e)
+        if payment_id:  # Если платеж уже создан, проверяем его снова
+            self.retry(exc=e, args=[subscription], kwargs={'payment_id': payment_id})
+        else:
+            logger.error(f"Critical error in autopayment: {e}")
+            raise
+
+
+@celery.task
+def schedule_autopayments() -> None:
+    """Schedule autopayments for due subscriptions."""
+    payment_manager = AutoPaymentManager(provider, get_sync_session)
+
+    # Получаем активные задачи
+    active_tasks = celery.control.inspect().active()
+    if active_tasks is None:
+        active_tasks = {}
+
+    # Собираем subscription_ids из активных задач
+    active_subscription_ids = set()
+    for worker_tasks in active_tasks.values():
+        for task in worker_tasks:
+            if task['name'] == 'tasks.process_autopayment':
+                try:
+                    subscription_id = task['kwargs'].get('subscription', {}).get('id')
+                    if subscription_id:
+                        active_subscription_ids.add(subscription_id)
+                except (KeyError, AttributeError):
+                    continue
+
+    # Получаем подписки для оплаты
+    subscriptions = asyncio.run(payment_manager.fetch_due_subscriptions())
+
+    scheduled_count = 0
+    for subscription in subscriptions:
+        # Проверяем, нет ли уже активной задачи для этой подписки
+        if subscription['id'] not in active_subscription_ids:
+            # Проверяем, нет ли недавних платежей в БД
+            with payment_manager.session_factory() as session:
+                recent_payment = session.query(PaymentModel).filter(
+                    PaymentModel.subscription_id == subscription['id']
+                    # ,
+                    # PaymentModel.created >= datetime.now(timezone.utc) - timedelta(minutes=5)
+                ).first()
+
+                if not recent_payment:
+                    process_autopayment.delay(subscription)
+                    scheduled_count += 1
+
+    if scheduled_count > 0:
+        logger.info(f"Scheduled {scheduled_count} new autopayments")
+    else:
+        logger.debug("No new autopayments needed")
+
+
+# Configure periodic tasks
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
@@ -199,141 +472,3 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(minute='*/1'),
         schedule_autopayments.s(),
     )
-
-
-@celery.task()
-def check_subscriptions_expiration():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(check_subscriptions_expiration_async())
-
-
-async def check_subscriptions_expiration_async():
-    async with httpx.AsyncClient() as client:
-        try:
-            # Получение списка всех активных подписок
-            response = await client.get(settings.base_url + "admin/all")
-            subscriptions = response.json()
-
-            # Проверка каждой активной подписки на истечение срока
-            for subscription in subscriptions:
-                if subscription["status"] == "active":
-                    await handle_active_subscription(client, subscription)
-
-        except Exception as e:
-            print(f"Ошибка при проверке подписок: {str(e)}")
-
-
-async def handle_active_subscription(client, subscription):
-    # Получение даты окончания подписки
-    end_date = datetime.strptime(
-        subscription["end_date"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
-        tzinfo=timezone.utc)
-
-    # Текущее время
-    current_time = datetime.now(timezone.utc)
-
-    # Проверка истечения срока подписки
-    if current_time > end_date:
-        # Подписка истекла, меняем статус на "expired"
-        status_data = {"status": "expired"}
-        response = await client.put(
-            settings.base_url + f"{subscription['id']}",
-            json=status_data,
-        )
-
-        if response.status_code == httpx.codes.OK:
-            print(
-                f"Подписка {subscription['id']} истекла "
-                f"и статус успешно изменён."
-            )
-        else:
-            print(f"Не удалось изменить статус подписки {subscription['id']}."
-                  f"Код состояния: {response.status_code}. "
-                  f"Ответ сервера: {response.text}"
-                  )
-
-# ----------------------
-async def fetch_due_subscriptions():
-    """Асинхронный запрос в API подписок"""
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(settings.base_url + 'admin/due', timeout=30) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    logger.error(f"Failed to fetch subscriptions, status: {response.status}")
-                    return []
-        except Exception as e:
-            logger.error(f"Error fetching subscriptions: {e}")
-            return []
-
-
-@celery.task(bind=True, max_retries=3, default_retry_delay=60 * 5)
-def process_autopayment(self, subscription):
-    """Обрабатывает автоплатёж для подписки"""
-    # required_keys = ["id", "payment_method_id", "amount"]
-    required_keys = ["id", "price"]
-    if not all(key in subscription for key in required_keys):
-        logger.error("Subscription data is missing required keys")
-        return
-
-    try:
-        subscription_id = subscription["id"]
-        # payment_method_id = subscription["payment_method_id"]
-        amount = subscription["price"]
-
-        # if not payment_method_id:
-        #     logger.error(f"No saved payment method for subscription {subscription_id}")
-        #     return
-
-
-        # Создаём платёж через YooKassa
-        payment_data = provider.make_recurrent_payment(
-            amount=amount,
-            currency="RUB",
-            description=f"Autopayment for subscription {subscription_id}",
-            # payment_method_id=payment_method_id,
-            capture=True
-        )
-
-        # Записываем платёж в БД
-        payment = PaymentModel(
-            user_id=subscription["user_id"],
-            tariff_id=subscription["plan_id"],
-            status=payment_data["status"],
-            payment_id=payment_data["id"],
-            subscription_id=subscription_id,
-        )
-        session = get_sync_session()
-        try:
-            session.add(payment)
-        except Exception as e:
-            print(f"Error adding payment to DB: {e}")
-        finally:
-            session.commit()
-
-        logger.info(f"Autopayment {payment_data['id']} created for subscription {subscription_id}")
-
-        # Проверяем статус
-        if payment_data["status"] == "succeeded":
-            logger.info(f"Payment {payment_data['id']} succeeded")
-        else:
-            logger.warning(f"Payment {payment_data['id']} is in status {payment_data['status']}")
-            self.retry()
-
-    except Exception as e:
-        print(e)
-        logger.error(f"Error processing autopayment for subscription {subscription_id}: {e}")
-        self.retry(exc=e)
-
-
-@celery.task
-def schedule_autopayments():
-    """Запрашивает подписки и создаёт задачи на автоплатежи"""
-    loop = asyncio.get_event_loop()
-    subscriptions = loop.run_until_complete(fetch_due_subscriptions())
-
-    for subscription in subscriptions:
-        process_autopayment.delay(subscription)
-
-    logger.info(f"Scheduled {len(subscriptions)} autopayments")

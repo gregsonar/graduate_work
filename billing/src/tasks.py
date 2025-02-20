@@ -234,7 +234,7 @@ class AutoPaymentManager:
 
             if payment_data["status"] == "succeeded":
                 logger.info(f"Payment {payment_data['id']} succeeded")
-                # self._update_payment_status(payment_data['id'], "succeeded")
+
                 subscribe.delay(payment_data['id'], payment_data["status"])
                 return payment_data["id"]
 
@@ -317,37 +317,38 @@ class AutoPaymentManager:
 
 
 @celery.task(name="Check payment status & subscribe")
-async def subscribe(payment_id: str, payment_status: str) -> None:
+def subscribe(payment_id: str, payment_status: str) -> None:
     """Handle subscription process after payment."""
     logger.info(f"Starting subscribe task for payment {payment_id} with status {payment_status}")
 
-    session = get_sync_session()
-    try:
-        print("2" * 100)
-        payment = session.query(PaymentModel).filter(
-            PaymentModel.payment_id == payment_id
-        ).first()
-        print("3" * 100)
-        if not payment:
-            logger.error(f"Payment {payment_id} not found in database")
-            return
+    async def _async_subscribe():
+        session = get_sync_session()
+        try:
+            payment = session.query(PaymentModel).filter(
+                PaymentModel.payment_id == payment_id
+            ).first()
 
-        tariff = session.get(TariffModel, payment.tariff_id)
+            if not payment:
+                logger.error(f"Payment {payment_id} not found in database")
+                return
 
-        if payment_status == "succeeded":
-            async with SubscriptionManager(settings.base_url) as subscription_manager:
-                print("4" * 100)
-                await subscription_manager.subscript_process(payment, tariff)
-                logger.info(f"Subscription processed for payment {payment_id}")
+            tariff = session.get(TariffModel, payment.tariff_id)
 
-        session.commit()
+            if payment_status == "succeeded":
+                async with SubscriptionManager(settings.base_url) as subscription_manager:
+                    await subscription_manager.subscript_process(payment, tariff)
+                    logger.info(f"Subscription processed for payment {payment_id}")
 
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Error in subscribe task: {e}", exc_info=True)
-        raise
-    finally:
-        session.close()
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error in subscribe task: {e}", exc_info=True)
+            raise
+        finally:
+            session.close()
+
+    asyncio.run(_async_subscribe())
 
 
 @celery.task()

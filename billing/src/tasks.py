@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from pprint import pprint
 from typing import Optional, Dict, List, Any
 
 import aiohttp
@@ -50,13 +49,13 @@ class SubscriptionManager:
         """Process subscription creation or update."""
         try:
             response = await self.get_subscription(payment.user_id)
-            print("5" * 100)
+
             if response.status_code == httpx.codes.NOT_FOUND:
-                print("6" * 100)
+
                 return await self.create_subscription(payment, tariff)
             elif response.status_code == httpx.codes.OK:
                 await self.update_subscription(response.json(), tariff)
-                print("9" * 100)
+
                 return response.json()['id']
             else:
                 logger.warning(
@@ -87,7 +86,7 @@ class SubscriptionManager:
         if response.status_code == httpx.codes.CREATED:
             logger.info("Subscription created successfully")
             return response.json()['id']
-        print("7" * 100)
+
         logger.error(
             f"Failed to create subscription. Status: {response.status_code}. Response: {response.text}"
         )
@@ -111,7 +110,6 @@ class SubscriptionManager:
             f"{self.base_url}{subscription_data['id']}",
             json=data
         )
-        print("8" * 100)
 
         if response.status_code == httpx.codes.OK:
             logger.info(f"Subscription {subscription_data['id']} updated successfully")
@@ -429,8 +427,9 @@ def schedule_autopayments() -> None:
            # Проверяем, нет ли недавних платежей в БД
            with payment_manager.session_factory() as session:
                recent_payment = session.query(PaymentModel).filter(
-                   PaymentModel.subscription_id == subscription['id'],
-                   PaymentModel.created >= datetime.now(timezone.utc) - timedelta(minutes=5)
+                   PaymentModel.subscription_id == subscription['id']
+                   # ,
+                   # PaymentModel.created >= datetime.now(timezone.utc) - timedelta(minutes=5)
                ).first()
 
                if not recent_payment:

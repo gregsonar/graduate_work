@@ -21,6 +21,8 @@ from typing_extensions import Optional
 
 from auth.core.breaker import AsyncCircuitBreaker
 from auth.core.base_service import circuit_protected
+from auth.events.user_events import UserEventProducer, UserCreatedEvent
+from auth.core.config import rabbit_config
 
 # Создаем объект для работы с паролями
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -38,6 +40,7 @@ class AuthService(UserRepository):
             failure_threshold=5,
             recovery_timeout=60
         )
+        self.event_producer = UserEventProducer(rabbit_config)
 
     async def user_already_exists(self, username: str) -> Boolean:
         existing_user = await self.get_by_username(username)
@@ -54,16 +57,20 @@ class AuthService(UserRepository):
         new_user_data = {
             "username": username,
             "password": password,
-            "is_superuser": is_superuser
+            "is_superuser": is_superuser,
+            "email": email or self._generate_email()
         }
-        if is_superuser:
-            new_user_data["email"] = email
-
-        print("PUPUPU" * 100)
-        print(new_user_data)
 
         new_user = await self.auth.user_repository.create(new_user_data)
 
+        try:
+            event = UserCreatedEvent(
+                user_id=new_user.id,
+                email=new_user.email
+            )
+            self.event_producer.publish_user_created(event)
+        except Exception as e:
+            logger.error(f"Failed to publish user created event: {e}")
 
         return {"id": str(new_user.id), "username": new_user.username}
 

@@ -6,6 +6,19 @@ MAXVALUE 9223372036854775807
 START 1
 CACHE 1;
 
+DROP TABLE IF EXISTS "public"."users";
+CREATE TABLE "public"."users" (
+  "id" uuid PRIMARY KEY,
+  "email" TEXT NOT NULL UNIQUE
+);
+
+INSERT INTO "public"."users" ("id", "email") VALUES
+  ('d6fa8c32-fdce-44cf-9444-9848119c36a3', 'user1@example.com'),
+  ('d6fa8c32-fdce-44cf-9444-9848119c36a4', 'user2@example.com'),
+  ('d6fa8c32-fdce-44cf-9444-9848119c36a5', 'user3@example.com');
+
+CREATE INDEX "users_id_idx" ON "public"."users"("id");
+CREATE INDEX "users_email_idx" ON "public"."users"("email");
 
 DROP TABLE IF EXISTS "public"."notification_messages";
 DROP TABLE IF EXISTS "public"."notifications";

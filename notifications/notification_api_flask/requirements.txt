@@ -42,3 +42,4 @@ Werkzeug==2.3.8
 zope.event==5.0
 zope.interface==6.1
 marshmallow-dataclass==8.7.1
+flask-cors==5.0.0

@@ -1,0 +1,106 @@
+graph TB
+    %% Main Services
+    NGINX[NGINX Reverse Proxy]
+    Auth[Auth Service]
+    Admin[Django Admin]
+    Notif[Notification Service]
+    Sub[Subscription Service]
+    Bill[Billing Service]
+    Pay[Payment Service]
+
+    %% Databases
+    AuthDB[(Auth PostgreSQL)]
+    AdminDB[(Admin PostgreSQL)]
+    NotifDB[(Notification PostgreSQL)]
+    SubDB[(Subscription PostgreSQL)]
+    BillDB[(Billing PostgreSQL)]
+
+    %% External Services
+    YooKassa[YooKassa]
+
+    %% Message Brokers & Cache
+    Redis[(Redis Cache)]
+    RabbitMQ[RabbitMQ]
+
+    %% Notification Consumers
+    WelcomeC[Welcome Consumer]
+    ToAllC[To-All Consumer]
+    EmailC[Email Consumer]
+    SchedulerC[Scheduler Consumer]
+
+    %% Monitoring & Debug
+    Jaeger[Jaeger Tracing]
+    MailHog[MailHog]
+    
+    %% WebSocket Server
+    WS[WebSocket Server]
+
+    %% Frontend connections
+    Client[Client] --> NGINX
+
+    %% NGINX Routes
+    NGINX --> Auth
+    NGINX --> Admin
+    NGINX --> Notif
+    NGINX --> Bill
+    NGINX --> WS
+    NGINX --> Jaeger
+    NGINX --> MailHog
+
+    %% Service Database Connections
+    Auth --> AuthDB
+    Auth --> Redis
+    Admin --> AdminDB
+    Notif --> NotifDB
+    Sub --> SubDB
+    Bill --> BillDB
+
+    %% Payment Integration
+    Pay --> YooKassa
+    Bill --> Pay
+
+    %% Message Queue Connections
+    Notif --> RabbitMQ
+    Bill --> RabbitMQ
+    RabbitMQ --> WelcomeC
+    RabbitMQ --> ToAllC
+    RabbitMQ --> EmailC
+    RabbitMQ --> SchedulerC
+
+    %% Email Testing
+    EmailC --> MailHog
+    
+    %% Service Communication
+    Auth --> Sub
+    Auth --> Bill
+    Sub --> Bill
+    Notif --> Auth
+    Admin --> Auth
+    Bill --> Sub
+
+    %% WebSocket Connections
+    WS --> NotifDB
+    Client --> WS
+
+    %% Monitoring
+    Auth --> Jaeger
+    Notif --> Jaeger
+    Sub --> Jaeger
+    Bill --> Jaeger
+
+    %% Styling
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef database fill:#69b,stroke:#333,stroke-width:2px
+    classDef queue fill:#ff9,stroke:#333,stroke-width:2px
+    classDef monitor fill:#9f9,stroke:#333,stroke-width:2px
+    classDef consumer fill:#f96,stroke:#333,stroke-width:2px
+    classDef proxy fill:#96f,stroke:#333,stroke-width:2px
+    classDef external fill:#ccc,stroke:#333,stroke-width:2px
+
+    class NGINX proxy
+    class Auth,Admin,Notif,Sub,Bill,Pay,WS service
+    class AuthDB,AdminDB,NotifDB,SubDB,BillDB,Redis database
+    class RabbitMQ queue
+    class WelcomeC,ToAllC,EmailC,SchedulerC consumer
+    class Jaeger,MailHog monitor
+    class YooKassa external

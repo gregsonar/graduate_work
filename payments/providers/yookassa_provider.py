@@ -82,13 +82,8 @@ class YooKassaProvider(BasePaymentProvider):
 
     def get_payment(self, payment_id: str) -> Dict[str, Any]:
         try:
-            print("6" * 100)
-            print(f"Payment id: {payment_id}")
-            payment = Payment.find_one(payment_id)
-            print("7" * 100)
 
-            print(f"Payment id: {payment.id}")
-            print(f"Payment status: {payment.status}")
+            payment = Payment.find_one(payment_id)
 
             # Преобразуем JSON-строку в словарь
             payment_data = json.loads(payment.json())

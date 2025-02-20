@@ -50,11 +50,13 @@ class SubscriptionManager:
         """Process subscription creation or update."""
         try:
             response = await self.get_subscription(payment.user_id)
-
+            print("5" * 100)
             if response.status_code == httpx.codes.NOT_FOUND:
+                print("6" * 100)
                 return await self.create_subscription(payment, tariff)
             elif response.status_code == httpx.codes.OK:
                 await self.update_subscription(response.json(), tariff)
+                print("9" * 100)
                 return response.json()['id']
             else:
                 logger.warning(
@@ -85,7 +87,7 @@ class SubscriptionManager:
         if response.status_code == httpx.codes.CREATED:
             logger.info("Subscription created successfully")
             return response.json()['id']
-
+        print("7" * 100)
         logger.error(
             f"Failed to create subscription. Status: {response.status_code}. Response: {response.text}"
         )
@@ -109,6 +111,7 @@ class SubscriptionManager:
             f"{self.base_url}{subscription_data['id']}",
             json=data
         )
+        print("8" * 100)
 
         if response.status_code == httpx.codes.OK:
             logger.info(f"Subscription {subscription_data['id']} updated successfully")
@@ -217,9 +220,7 @@ class AutoPaymentManager:
         try:
             if payment_id:
                 logger.info(f"Checking existing payment with ID: {payment_id}")
-                print("4" * 100)
                 payment_data = self.provider.get_payment(str(payment_id))
-                print("5" * 100)
                 if not payment_data:
                     logger.error(f"Payment {payment_id} not found in YooKassa")
                     raise ValueError(f"Payment {payment_id} not found")
@@ -233,18 +234,21 @@ class AutoPaymentManager:
 
             if payment_data["status"] == "succeeded":
                 logger.info(f"Payment {payment_data['id']} succeeded")
-                self._update_payment_status(payment_data['id'], "succeeded")
+                # self._update_payment_status(payment_data['id'], "succeeded")
                 subscribe.delay(payment_data['id'], payment_data["status"])
                 return payment_data["id"]
 
             elif payment_data["status"] == "waiting_for_capture":
-                logger.info(f"Payment {payment_data['id']} is waiting for capture")
-                self._update_payment_status(payment_data['id'], "waiting_for_capture")
+                self.provider.capture_payment(payment_data['id'])
+
+                logger.info(f"Payment {payment_data['id']} was captured successfully")
+
+                self._update_payment_status(payment_data['id'], "succeeded")
                 return payment_data["id"]
 
             elif payment_data["status"] == "pending":
                 logger.info(f"Payment {payment_data['id']} is pending")
-                raise ValueError("Payment not completed: pending")
+                # raise ValueError("Payment not completed: pending")
 
             else:
                 logger.error(f"Payment {payment_data['id']} has unexpected status: {payment_data['status']}")
@@ -304,6 +308,7 @@ class AutoPaymentManager:
                 if payment:
                     payment.status = status
                     session.commit()
+
                     logger.info(f"Payment {payment_id} status updated to {status}")
             except Exception as e:
                 session.rollback()
@@ -318,10 +323,11 @@ async def subscribe(payment_id: str, payment_status: str) -> None:
 
     session = get_sync_session()
     try:
+        print("2" * 100)
         payment = session.query(PaymentModel).filter(
             PaymentModel.payment_id == payment_id
         ).first()
-
+        print("3" * 100)
         if not payment:
             logger.error(f"Payment {payment_id} not found in database")
             return
@@ -330,6 +336,7 @@ async def subscribe(payment_id: str, payment_status: str) -> None:
 
         if payment_status == "succeeded":
             async with SubscriptionManager(settings.base_url) as subscription_manager:
+                print("4" * 100)
                 await subscription_manager.subscript_process(payment, tariff)
                 logger.info(f"Subscription processed for payment {payment_id}")
 
@@ -354,7 +361,7 @@ def check_subscriptions_expiration():
     asyncio.run(_run_check())
 
 
-@celery.task(bind=True, max_retries=3, default_retry_delay=10)
+@celery.task(bind=True, max_retries=20, default_retry_delay=30)
 def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional[str] = None) -> None:
     """Process autopayment for a subscription."""
     logger.info(f"Starting process_autopayment task for subscription {subscription['id']}")
@@ -364,19 +371,17 @@ def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional
 
     try:
         if not payment_id:
-            print("1" * 100)
+
             with payment_manager.session_factory() as session:
                 logger.info("Checking recent payments in DB")
                 recent_payment = session.query(PaymentModel).filter(
                     PaymentModel.subscription_id == subscription['id']
                 ).order_by(PaymentModel.created.desc()).first()
-                print("2" * 100)
                 if recent_payment:
                     logger.info(f"Found recent payment in DB: {recent_payment.payment_id}")
                     payment_id = recent_payment.payment_id
                 else:
                     logger.info("No recent payments found in DB")
-        print("3" * 100)
         processed_payment_id = payment_manager.process_single_payment(subscription, payment_id)
         logger.info(f"Payment processed successfully: {processed_payment_id}")
         return processed_payment_id

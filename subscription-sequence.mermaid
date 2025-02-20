@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor User
+    participant NGINX
+    participant Auth
+    participant Sub as Subscription Service
+    participant Bill as Billing Service
+    participant Pay as Payment Service
+    participant YK as YooKassa
+    participant Notif as Notification Service
+    participant RMQ as RabbitMQ
+    participant Email as Email Consumer
+    participant WS as WebSocket Server
+
+    User->>+NGINX: Request subscription
+    NGINX->>+Auth: Validate token
+    Auth-->>-NGINX: Token valid
+    
+    NGINX->>+Bill: Initialize payment
+    Bill->>Pay: Process payment
+    Pay->>YK: Payment request
+    YK-->>Pay: Payment confirmation
+    Pay-->>Bill: Payment processed
+    Bill-->>-NGINX: Payment successful
+
+    NGINX->>+Sub: Create subscription
+    Sub->>Sub: Validate request
+    Sub->>Sub: Create subscription record
+    Sub-->>-NGINX: Subscription created
+
+    NGINX->>+Notif: Notify about new subscription
+    Notif->>RMQ: Publish event
+    RMQ->>Email: Send confirmation email
+    RMQ->>WS: Send real-time notification
+    WS-->>User: Subscription notification
+    Notif-->>-NGINX: Notification sent
+    
+    NGINX-->>-User: Subscription confirmed

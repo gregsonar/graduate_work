@@ -22,13 +22,11 @@ class TariffService:
                     id=tariff.id,
                     name=tariff.name,
                     description=tariff.description,
-                    price=tariff.price
+                    price=tariff.price,
                 )
             )
         return tariff_list
 
 
-def get_tariff_service(
-        session: AsyncSession = Depends(get_session)
-):
+def get_tariff_service(session: AsyncSession = Depends(get_session)):
     return TariffService(session)

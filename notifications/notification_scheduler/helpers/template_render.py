@@ -13,14 +13,14 @@ class UsersTemplateRender:
     def __init__(
         self,
         template: str,
-        data_getter: 'TemplateDataGetter',
+        data_getter: "TemplateDataGetter",
         render: Callable[[str, dict], str],
     ):
         self._template = template
         self._data_getter = data_getter
         self.render = render
 
-    def gen_templates(self) -> (str, 'User'):
+    def gen_templates(self) -> (str, "User"):
         for template_data in self._data_getter.template_data():
             yield self.render(
                 self._template, template_data.render_data()

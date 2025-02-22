@@ -4,17 +4,22 @@ from uuid import uuid4
 from fastapi import FastAPI, Depends
 from auth.services.auth_service import AuthService
 
+
 # Создаем тестовое приложение FastAPI для проверки AuthService
 @pytest.fixture
 def test_app(auth_service: AuthService):
     app = FastAPI()
 
     @app.post("/register")
-    async def register(username: str, password: str, service: AuthService = Depends(auth_service)):
+    async def register(
+        username: str, password: str, service: AuthService = Depends(auth_service)
+    ):
         return await service.register_user(username, password)
 
     @app.post("/login")
-    async def login(username: str, password: str, service: AuthService = Depends(auth_service)):
+    async def login(
+        username: str, password: str, service: AuthService = Depends(auth_service)
+    ):
         return await service.authenticate_user(username, password)
 
     @app.post("/logout")
@@ -28,14 +33,18 @@ def test_app(auth_service: AuthService):
 
     return app
 
+
 @pytest.mark.asyncio
 async def test_register_user(test_app):
     async with AsyncClient(app=test_app, base_url="http://test") as client:
-        response = await client.post("/register", json={"username": "test_user", "password": "test_password"})
+        response = await client.post(
+            "/register", json={"username": "test_user", "password": "test_password"}
+        )
     assert response.status_code == 200
     data = response.json()
     assert "id" in data
     assert data["username"] == "test_user"
+
 
 @pytest.mark.asyncio
 async def test_login_user(test_app, auth_service):
@@ -43,11 +52,14 @@ async def test_login_user(test_app, auth_service):
     await auth_service.register_user("test_user", "test_password")
 
     async with AsyncClient(app=test_app, base_url="http://test") as client:
-        response = await client.post("/login", json={"username": "test_user", "password": "test_password"})
+        response = await client.post(
+            "/login", json={"username": "test_user", "password": "test_password"}
+        )
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
     assert "refresh_token" in data
+
 
 @pytest.mark.asyncio
 async def test_logout_user(test_app, auth_service):
@@ -60,6 +72,7 @@ async def test_logout_user(test_app, auth_service):
         response = await client.post("/logout", json={"token": access_token})
     assert response.status_code == 200
     assert response.json() == {"message": "Successfully logged out"}
+
 
 @pytest.mark.asyncio
 async def test_refresh_token(test_app, auth_service):

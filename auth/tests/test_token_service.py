@@ -21,10 +21,7 @@ class TestTokenService:
 
         # Act
         token = await token_service.create_access_token(
-            user_id=user_id,
-            username=username,
-            is_superuser=is_superuser,
-            roles=roles
+            user_id=user_id, username=username, is_superuser=is_superuser, roles=roles
         )
 
         # Assert
@@ -32,7 +29,7 @@ class TestTokenService:
         payload = jwt.decode(
             token,
             token_service.config.secret_key,
-            algorithms=[token_service.config.algorithm]
+            algorithms=[token_service.config.algorithm],
         )
         assert payload["user_id"] == str(user_id)
         assert payload["username"] == username
@@ -55,7 +52,7 @@ class TestTokenService:
         payload = jwt.decode(
             token,
             token_service.config.secret_key,
-            algorithms=[token_service.config.algorithm]
+            algorithms=[token_service.config.algorithm],
         )
         assert payload["user_id"] == str(user_id)
         assert payload["token_type"] == "refresh"
@@ -69,7 +66,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.is_token_blacklisted = AsyncMock(return_value=False)
 
@@ -88,7 +85,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.is_token_blacklisted = AsyncMock(return_value=True)
 
@@ -105,7 +102,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.is_token_blacklisted = AsyncMock(return_value=False)
 
@@ -123,7 +120,9 @@ class TestTokenService:
         token_service.blacklist_token = AsyncMock()
 
         # Act
-        new_access_token, new_refresh_token = await token_service.refresh_tokens(refresh_token)
+        new_access_token, new_refresh_token = await token_service.refresh_tokens(
+            refresh_token
+        )
 
         # Assert
         assert new_access_token is not None
@@ -136,7 +135,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.is_token_blacklisted = AsyncMock(return_value=False)
 
@@ -152,12 +151,12 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         payload = jwt.decode(
             token,
             token_service.config.secret_key,
-            algorithms=[token_service.config.algorithm]
+            algorithms=[token_service.config.algorithm],
         )
         token_service.redis_client.setex = AsyncMock()
 
@@ -177,7 +176,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.redis_client.exists = AsyncMock(return_value=1)
 
@@ -193,7 +192,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.redis_client.exists = AsyncMock(return_value=0)
 
@@ -208,12 +207,16 @@ class TestTokenService:
         token_service.user_repository.get_with_roles = AsyncMock(return_value=mock_user)
 
         # Act
-        access_token, refresh_token = await token_service.create_tokens_for_user(mock_user.id)
+        access_token, refresh_token = await token_service.create_tokens_for_user(
+            mock_user.id
+        )
 
         # Assert
         assert access_token is not None
         assert refresh_token is not None
-        token_service.user_repository.get_with_roles.assert_awaited_once_with(mock_user.id)
+        token_service.user_repository.get_with_roles.assert_awaited_once_with(
+            mock_user.id
+        )
 
     async def test_create_tokens_for_user_not_found(self, token_service):
         # Arrange
@@ -237,7 +240,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=user_roles  # Используем полученные роли
+            roles=user_roles,  # Используем полученные роли
         )
         token_service.user_repository.get_with_roles = AsyncMock(return_value=mock_user)
 
@@ -257,7 +260,7 @@ class TestTokenService:
             user_id=mock_user.id,
             username=mock_user.username,
             is_superuser=mock_user.is_superuser,
-            roles=["user"]
+            roles=["user"],
         )
         token_service.user_repository.get_with_roles = AsyncMock(return_value=None)
         token_service.is_token_blacklisted = AsyncMock(return_value=False)

@@ -8,7 +8,14 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from auth.schemas.role_schema import UpdateRoleRequest, UserRoleAssignment, RoleResponse
 from auth.services.role_service import RoleService
 from auth.api.v1.role_api import get_current_user_roles
-from auth.api.v1.role_api import get_roles, get_role, update_role, delete_role, assign_users_to_role, create_role
+from auth.api.v1.role_api import (
+    get_roles,
+    get_role,
+    update_role,
+    delete_role,
+    assign_users_to_role,
+    create_role,
+)
 
 
 # Tests for get_roles endpoint
@@ -27,7 +34,7 @@ async def test_get_roles_success(mock_session):
             is_deleted=False,
             created_at=test_datetime,
             updated_at=test_datetime,
-            users=[]
+            users=[],
         )
     ]
     role_service.get_all = AsyncMock(return_value=mock_roles)
@@ -82,15 +89,15 @@ async def test_get_role_success(mock_session, mock_role):
     test_datetime = datetime(2024, 11, 8, 7, 36, 26, 540880)
 
     mock_role = RoleResponse(
-            id=test_uuid,
-            name="TEST",
-            description="ROLE",
-            is_active=True,
-            is_deleted=False,
-            created_at=test_datetime,
-            updated_at=test_datetime,
-            users=[]
-        )
+        id=test_uuid,
+        name="TEST",
+        description="ROLE",
+        is_active=True,
+        is_deleted=False,
+        created_at=test_datetime,
+        updated_at=test_datetime,
+        users=[],
+    )
 
     role_service = RoleService(mock_session)
     role_service.get_by_id = AsyncMock(return_value=mock_role)
@@ -123,15 +130,15 @@ async def test_update_role_success(mock_session, mock_role):
     test_datetime = datetime(2024, 11, 8, 7, 36, 26, 540880)
 
     mock_role = RoleResponse(
-            id=test_uuid,
-            name="TEST",
-            description="ROLE",
-            is_active=True,
-            is_deleted=False,
-            created_at=test_datetime,
-            updated_at=test_datetime,
-            users=[]
-        )
+        id=test_uuid,
+        name="TEST",
+        description="ROLE",
+        is_active=True,
+        is_deleted=False,
+        created_at=test_datetime,
+        updated_at=test_datetime,
+        users=[],
+    )
     role_service = RoleService(mock_session)
     role_service.get_by_id = AsyncMock(return_value=mock_role)
     role_service.get_by_name = AsyncMock(return_value=None)
@@ -141,9 +148,7 @@ async def test_update_role_success(mock_session, mock_role):
 
     # Act
     result = await update_role(
-        role_id=mock_role.id,
-        role_update=update_data,
-        role_service=role_service
+        role_id=mock_role.id, role_update=update_data, role_service=role_service
     )
 
     # Assert
@@ -162,9 +167,7 @@ async def test_update_role_name_conflict(mock_session, mock_role):
     # Act & Assert
     with pytest.raises(HTTPException) as exc_info:
         await update_role(
-            role_id=mock_role.id,
-            role_update=update_data,
-            role_service=role_service
+            role_id=mock_role.id, role_update=update_data, role_service=role_service
         )
     assert exc_info.value.status_code == 409
 
@@ -207,9 +210,7 @@ async def test_assign_users_to_role_success(mock_session, mock_role):
 
     # Act
     await assign_users_to_role(
-        role_id=mock_role.id,
-        assignment=assignment,
-        role_service=role_service
+        role_id=mock_role.id, assignment=assignment, role_service=role_service
     )
 
     # Assert
@@ -228,9 +229,7 @@ async def test_assign_users_to_role_failure(mock_session, mock_role):
     # Act & Assert
     with pytest.raises(HTTPException) as exc_info:
         await assign_users_to_role(
-            role_id=mock_role.id,
-            assignment=assignment,
-            role_service=role_service
+            role_id=mock_role.id, assignment=assignment, role_service=role_service
         )
     assert exc_info.value.status_code == 400
 
@@ -240,7 +239,9 @@ async def test_create_role_success(mock_session):
     # Arrange
     role_service = RoleService(mock_session)
     role_service.get_by_name = AsyncMock(return_value=None)
-    role_service.create = AsyncMock(return_value={"id": uuid.uuid4(), "name": "new_role"})
+    role_service.create = AsyncMock(
+        return_value={"id": uuid.uuid4(), "name": "new_role"}
+    )
 
     role_data = UpdateRoleRequest(name="new_role", description="New role description")
 
@@ -264,7 +265,9 @@ async def test_create_role_name_exists(mock_session):
         await create_role(role=role_data, role_service=role_service)
 
     assert exc_info.value.status_code == 409
-    assert f"Role with name '{role_data.name}' already exists" in str(exc_info.value.detail)
+    assert f"Role with name '{role_data.name}' already exists" in str(
+        exc_info.value.detail
+    )
 
 
 # Tests for get_current_user_roles endpoint
@@ -276,8 +279,7 @@ async def test_get_current_user_roles_success(mock_session):
 
     # Act
     result = await get_current_user_roles(
-        current_user={"id": "123e4567-e89"},
-        role_service=role_service
+        current_user={"id": "123e4567-e89"}, role_service=role_service
     )
 
     # Assert
@@ -293,7 +295,6 @@ async def test_get_current_user_roles_error(mock_session, mock_db_error):
     # Act & Assert
     with pytest.raises(HTTPException) as exc_info:
         await get_current_user_roles(
-            current_user={"id": "123e4567-e89"},
-            role_service=role_service
+            current_user={"id": "123e4567-e89"}, role_service=role_service
         )
     assert exc_info.value.status_code == 500

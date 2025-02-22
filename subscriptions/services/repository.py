@@ -8,6 +8,7 @@ from subscriptions.models.subscription import Subscription, SubscriptionStatus
 from subscriptions.services.interfaces import ISubscriptionRepository
 from subscriptions.core.exceptions import SubscriptionNotFoundException
 
+
 class SubscriptionRepository(ISubscriptionRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -46,14 +47,14 @@ class SubscriptionRepository(ISubscriptionRepository):
         return subscription
 
     async def list_subscriptions(
-            self,
-            offset: int = 0,
-            limit: int = 50,
-            user_id: Optional[UUID] = None,
-            status: Optional[SubscriptionStatus] = None,
-            plan_type: Optional[str] = None,
-            end_date: Optional[datetime.date] = None
-            # добавляем фильтр по дате платежа/отмены подписки
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        user_id: Optional[UUID] = None,
+        status: Optional[SubscriptionStatus] = None,
+        plan_type: Optional[str] = None,
+        end_date: Optional[datetime.date] = None,
+        # добавляем фильтр по дате платежа/отмены подписки
     ) -> List[Subscription]:
 
         query = select(Subscription)
@@ -68,8 +69,7 @@ class SubscriptionRepository(ISubscriptionRepository):
             conditions.append(Subscription.plan_type == plan_type)
         if end_date:
             conditions.append(Subscription.end_date >= end_date)
-            conditions.append(
-                Subscription.end_date < (end_date + timedelta(days=1)))
+            conditions.append(Subscription.end_date < (end_date + timedelta(days=1)))
 
         if conditions:
             query = query.filter(and_(*conditions))

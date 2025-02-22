@@ -5,7 +5,8 @@ from sqlalchemy import Boolean, Column, Integer, Numeric, String, Text
 
 class TariffModel(Base, UUIDMixin, TimeStampedMixin):
     """Модель тарифа"""
-    __tablename__ = 'tariff'
+
+    __tablename__ = "tariff"
 
     name = Column(String(255))
     description = Column(Text, nullable=True)

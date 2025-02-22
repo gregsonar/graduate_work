@@ -3,8 +3,17 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException, status
 from uuid import UUID
 
-from auth.api.v1.auth_api import router, AuthRequest, TokenResponse, UserCreate, get_current_user, logout, login, \
-    refresh, register
+from auth.api.v1.auth_api import (
+    router,
+    AuthRequest,
+    TokenResponse,
+    UserCreate,
+    get_current_user,
+    logout,
+    login,
+    refresh,
+    register,
+)
 from auth.services.auth_service import AuthService
 from auth.services.token_service import TokenService
 
@@ -44,7 +53,9 @@ class TestAuthAPI:
     async def test_login_invalid_credentials(self, mock_auth_service):
         # Arrange
         auth_request = AuthRequest(username="wrong", password="longbutwrong")
-        mock_auth_service.authenticate_user.side_effect = Exception("Invalid credentials")
+        mock_auth_service.authenticate_user.side_effect = Exception(
+            "Invalid credentials"
+        )
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -63,7 +74,9 @@ class TestAuthAPI:
 
         # Assert
         assert response == {"detail": "Successfully logged out"}
-        mock_auth_service.logout_user.assert_awaited_once_with(access_token, refresh_token)
+        mock_auth_service.logout_user.assert_awaited_once_with(
+            access_token, refresh_token
+        )
 
     async def test_logout_failure(self, mock_auth_service):
         # Arrange
@@ -80,7 +93,10 @@ class TestAuthAPI:
     async def test_refresh_success(self, mock_auth_service):
         # Arrange
         refresh_token = "refresh123"
-        expected_tokens = {"access_token": "newaccess123", "refresh_token": "newrefresh123"}
+        expected_tokens = {
+            "access_token": "newaccess123",
+            "refresh_token": "newrefresh123",
+        }
         mock_auth_service.refresh_token.return_value = expected_tokens
 
         # Act
@@ -145,7 +161,7 @@ class TestAuthAPI:
             "id": "123e4567-e89b-12d3-a456-426614174000",
             "username": "testuser",
             "is_superuser": False,
-            "roles": ["user"]
+            "roles": ["user"],
         }
         mock_token_service.get_current_user.return_value = expected_user_data
 

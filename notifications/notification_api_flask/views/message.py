@@ -16,17 +16,20 @@ class MessageAPI(MethodView):
             errors = form_schema.validate(request.json)
             if errors:
                 logger.error(f"Validation errors: {errors}")
-                return jsonify({"message": "Validation failed", "errors": errors}), BAD_REQUEST
+                return (
+                    jsonify({"message": "Validation failed", "errors": errors}),
+                    BAD_REQUEST,
+                )
 
             message = form_schema.load(request.json)
             user = find_user_by_id(message.user_id)
-            
+
             if not user:
                 return jsonify({"message": "User was not found"}), BAD_REQUEST
 
             send_instant_message(message)
             return jsonify({"message": "Message sent successfully"}), OK
-            
+
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")
             return jsonify({"message": str(e)}), BAD_REQUEST

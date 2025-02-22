@@ -3,7 +3,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from typing import AsyncGenerator
 from sqlalchemy.orm import declarative_base
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/payments_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql+asyncpg://user:password@localhost/payments_db"
+)
 
 # Создаём асинхронный движок SQLAlchemy
 engine = create_async_engine(DATABASE_URL, echo=True, future=True)
@@ -13,6 +15,7 @@ AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 # Базовый класс для моделей
 Base = declarative_base()
+
 
 # Dependency для получения сессии в FastAPI
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

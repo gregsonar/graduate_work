@@ -15,10 +15,10 @@ class UserCreatedAPI(MethodView):
         errors = form_schema.validate(request.json)
         if errors:
             return errors, BAD_REQUEST
-        user_id = request.json.get('user_id', None)
+        user_id = request.json.get("user_id", None)
         user = find_user_by_id(user_id)
         if not user:
-            return 'User was not found', BAD_REQUEST
+            return "User was not found", BAD_REQUEST
         user_schema = UserSchema()
         user_to_queue = user_schema.dump(user)
 

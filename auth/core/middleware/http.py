@@ -6,11 +6,11 @@ from .tracker import RequestTracker
 
 
 async def request_limit_middleware(
-        request: Request,
-        call_next: Callable,
-        limiter: RequestLimit,
-        tracker: RequestTracker,
-) -> ORJSONResponse | Response :
+    request: Request,
+    call_next: Callable,
+    limiter: RequestLimit,
+    tracker: RequestTracker,
+) -> ORJSONResponse | Response:
     request_id = tracker.get_or_generate_request_id(request)
     tracker.setup_tracing(request, request_id)
 
@@ -23,24 +23,17 @@ async def request_limit_middleware(
 
     if request.url.path == "/api/v1/auth/login":
         is_limited, remaining = await limiter.is_rate_limit(
-            f"{client_ip}:login",
-            max_requests=5,
-            window=300
+            f"{client_ip}:login", max_requests=5, window=300
         )
     else:
         is_limited, remaining = await limiter.is_rate_limit(
-            f"{client_ip}:auth",
-            max_requests=30,
-            window=60
+            f"{client_ip}:auth", max_requests=30, window=60
         )
 
     if is_limited:
         return ORJSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            content={
-                "detail": "Too many requests",
-                "request_id": request_id
-            }
+            content={"detail": "Too many requests", "request_id": request_id},
         )
 
     response = await call_next(request)

@@ -13,8 +13,9 @@ app = FastAPI()
 
 provider = YooKassaProvider(
     account_id=os.getenv("YOOKASSA_SHOP_ID", "1234567"),
-    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123")
+    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123"),
 )
+
 
 @app.post("/webhook/yookassa")
 async def yookassa_webhook(request: Request):
@@ -39,7 +40,10 @@ async def yookassa_webhook(request: Request):
     except ApiError as e:
         raise HTTPException(status_code=400, detail=f"Ошибка API: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка обработки вебхука: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Ошибка обработки вебхука: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8433)

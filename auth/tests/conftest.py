@@ -20,7 +20,9 @@ from auth.db.redis_db import get_redis, redis
 from auth.services.token_service import TokenService
 
 # Добавляем корневую директорию проекта в PYTHONPATH
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 sys.path.insert(0, project_root)
 
 from auth.models.role import Role
@@ -33,6 +35,7 @@ TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/test_db"
 
 pytest_plugins = ("pytest_asyncio",)
 
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator:
     """Create an instance of the default event loop for each test case."""
@@ -40,11 +43,13 @@ def event_loop() -> Generator:
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session")
 async def engine() -> AsyncGenerator[AsyncEngine, None]:
     engine = create_async_engine(TEST_DATABASE_URL, echo=True)
     yield engine
     await engine.dispose()
+
 
 @pytest.fixture(scope="session")
 async def create_tables_old(engine: AsyncEngine) -> None:
@@ -53,18 +58,23 @@ async def create_tables_old(engine: AsyncEngine) -> None:
         await conn.run_sync(Base.metadata.drop_all, checkfirst=True)
         await conn.run_sync(Base.metadata.create_all)
 
+
 @pytest.fixture(scope="session")
 async def create_tables(engine: AsyncEngine) -> None:
     async with engine.begin() as conn:
-        #await conn.run_sync(Base.metadata.drop_all)
+        # await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
+
 @pytest.fixture(scope="function")
-async def db_session(engine: AsyncEngine, create_tables: None) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    engine: AsyncEngine, create_tables: None
+) -> AsyncGenerator[AsyncSession, None]:
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
         await session.rollback()
+
 
 @pytest.fixture
 def mock_session():
@@ -73,13 +83,15 @@ def mock_session():
     session.rollback = AsyncMock()
     return session
 
+
 @pytest.fixture
 def mock_role():
     return Role(
         id=uuid.UUID("f49ebc90-caef-4f19-822b-8fd5a570e057"),
         name="user",
-        description="user"
+        description="user",
     )
+
 
 @pytest.fixture
 def mock_user():
@@ -87,15 +99,14 @@ def mock_user():
         id=uuid.UUID("4e4734c1-3359-447e-9f7c-31d8b76e1ffb"),
         password="admin",
         username="test_user",
-        is_superuser=True
+        is_superuser=True,
     )
+
 
 @pytest.fixture
 def mock_user_role(mock_user, mock_role):
-    return UserRole(
-        user_id=mock_user.id,
-        role_id=mock_role.id
-    )
+    return UserRole(user_id=mock_user.id, role_id=mock_role.id)
+
 
 @pytest.fixture
 def mock_query_result():
@@ -113,14 +124,14 @@ def mock_query_result():
 
     return MockResult
 
+
 @pytest.fixture
 def create_user_role():
     def _create_user_role(user_id, role_id):
-        return UserRole(
-            user_id=user_id,
-            role_id=role_id
-        )
+        return UserRole(user_id=user_id, role_id=role_id)
+
     return _create_user_role
+
 
 @pytest.fixture
 def mock_db_error():
@@ -161,6 +172,7 @@ def mock_redis_client():
 
     return client
 
+
 @pytest.fixture
 def token_service(mock_redis_client, mock_session):
     service = TokenService(mock_redis_client, mock_session)
@@ -178,8 +190,9 @@ async def circuit_breaker(mock_redis_client):
         service_name="test_service",
         failure_threshold=3,
         recovery_timeout=1,
-        half_open_max_tries=2
+        half_open_max_tries=2,
     )
+
 
 @pytest.fixture
 def mock_service():
@@ -196,6 +209,7 @@ def mock_service():
 
     return Service()
 
+
 @pytest.fixture
 async def redis_client() -> AsyncGenerator[Redis, None]:
     """Create Redis client for tests"""
@@ -208,6 +222,7 @@ async def redis_client() -> AsyncGenerator[Redis, None]:
     finally:
         await client.flushdb()
         await client.close()
+
 
 @pytest.fixture
 async def context_redis_client():

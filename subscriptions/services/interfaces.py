@@ -7,7 +7,7 @@ from subscriptions.schemas.subscription_schema import (
     SubscriptionCreate,
     SubscriptionUpdate,
     SubscriptionResponse,
-    SubscriptionHistoryResponse
+    SubscriptionHistoryResponse,
 )
 
 
@@ -35,7 +35,7 @@ class ISubscriptionRepository(ABC):
         limit: int = 50,
         user_id: Optional[UUID] = None,
         status: Optional[SubscriptionStatus] = None,
-        plan_type: Optional[str] = None
+        plan_type: Optional[str] = None,
     ) -> List[Subscription]:
         pass
 
@@ -56,17 +56,23 @@ class ISubscriptionStatusManager(ABC):
 
 class ISubscriptionHistoryManager(ABC):
     @abstractmethod
-    async def add_record(self, subscription_id: UUID, action: str, details: dict | None = None) -> None:
+    async def add_record(
+        self, subscription_id: UUID, action: str, details: dict | None = None
+    ) -> None:
         pass
 
     @abstractmethod
-    async def get_history(self, subscription_id: UUID) -> List[SubscriptionHistoryResponse]:
+    async def get_history(
+        self, subscription_id: UUID
+    ) -> List[SubscriptionHistoryResponse]:
         pass
 
 
 class ISubscriptionValidator(ABC):
     @abstractmethod
-    async def validate_status_transition(self, current_status: str, new_status: str) -> bool:
+    async def validate_status_transition(
+        self, current_status: str, new_status: str
+    ) -> bool:
         pass
 
     @abstractmethod

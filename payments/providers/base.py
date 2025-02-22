@@ -13,15 +13,13 @@ class BasePaymentProvider(ABC):
         currency: str,
         description: str,
         metadata: Optional[Dict] = None,
-        idempotence_key: Optional[UUID] = None
+        idempotence_key: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
     def capture_payment(
-        self,
-        payment_id: str,
-        idempotence_key: Optional[UUID] = None
+        self, payment_id: str, idempotence_key: Optional[UUID] = None
     ) -> Dict[str, Any]:
         pass
 

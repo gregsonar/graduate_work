@@ -22,15 +22,16 @@ class RabbitMQSettings(BaseSettings):
     user_created_queue: str = Field(..., alias="RABBIT_USER_CREATED_QUEUE")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
+
 
 rabbit_config = RabbitMQSettings()
 
+
 class OAuthProviderSettings(BaseModel):
     """Base settings for OAuth providers"""
+
     client_id: str
     client_secret: str
     redirect_url: str
@@ -44,6 +45,7 @@ class OAuthProviderSettings(BaseModel):
 
 class VKOAuthSettings(OAuthProviderSettings):
     """VK specific OAuth settings"""
+
     # client_id: str = Field(..., alias="VK_CLIENT_ID")
     # client_secret: str = Field(..., alias="VK_CLIENT_SECRET")
     # redirect_url: str = Field(..., alias="VK_REDIRECT_URL")
@@ -53,10 +55,9 @@ class VKOAuthSettings(OAuthProviderSettings):
     user_info_url: str = "https://id.vk.com/oauth2/user_info"
 
 
-
-
 class YandexOAuthSettings(OAuthProviderSettings):
     """Yandex specific OAuth settings"""
+
     # client_id: str = Field(..., alias="YANDEX_CLIENT_ID")
     # client_secret: str = Field(..., alias="YANDEX_CLIENT_SECRET")
     # redirect_url: str = Field(..., alias="YANDEX_REDIRECT_URL")
@@ -65,14 +66,14 @@ class YandexOAuthSettings(OAuthProviderSettings):
     user_info_url: str = "https://login.yandex.ru/info"
 
 
-
 class OAuthConfig(BaseSettings):
     """OAuth configuration container"""
+
     vk: VKOAuthSettings
     yandex: YandexOAuthSettings
 
     @classmethod
-    def from_general_config(cls, config: 'Config') -> 'OAuthConfig':
+    def from_general_config(cls, config: "Config") -> "OAuthConfig":
         """Creates OAuth config from general config"""
         return cls(
             vk=VKOAuthSettings(
@@ -84,41 +85,39 @@ class OAuthConfig(BaseSettings):
                 client_id=config.yandex_client_id,
                 client_secret=config.yandex_client_secret,
                 redirect_url=config.yandex_redirect_url,
-            )
+            ),
         )
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
+
 
 class TokenConfig(BaseSettings):
     """Configuration for token generation and validation"""
 
     secret_key: str = Field(..., alias="SECRET_KEY")
     algorithm: str = Field(default="HS256", alias="ALGORITHM")
-    access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(
+        default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
+    )
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
-
 
 
 class RedisSettings(BaseSettings):
     """Модель валидирующая конфиги Redis из .env файла."""
 
+    host: str = Field(default="localhost", alias="REDIS_HOST")
+    port: int = Field(default=6379, alias="REDIS_PORT")
+    db: int = Field(default=0, alias="REDIS_DATABASES")
 
-    host: str = Field(default='localhost', alias='REDIS_HOST')
-    port: int = Field(default=6379, alias='REDIS_PORT')
-    db: int = Field(default=0, alias='REDIS_DATABASES')
-
-    model_config = SettingsConfigDict(extra='ignore', env_file_encoding='utf-8',
-                                      populate_by_name=True)
+    model_config = SettingsConfigDict(
+        extra="ignore", env_file_encoding="utf-8", populate_by_name=True
+    )
 
 
 class Config(BaseSettings):
@@ -143,7 +142,6 @@ class Config(BaseSettings):
     yandex_client_secret: str = Field(..., alias="YANDEX_CLIENT_SECRET")
     yandex_redirect_url: str = Field(..., alias="YANDEX_REDIRECT_URL")
 
-
     @property
     def db_url(self) -> str:
         return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
@@ -153,12 +151,9 @@ class Config(BaseSettings):
         return OAuthConfig.from_general_config(self)
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
 
 config = Config()
 oauth_config = config.oauth_config
-

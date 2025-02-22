@@ -13,18 +13,18 @@ class ExternalAuthBackend(BaseBackend):
             # Получаем токены
             response = requests.post(
                 f"{settings.AUTH_SERVICE_URL}/auth/login",
-                json={"username": username, "password": password}
+                json={"username": username, "password": password},
             )
 
             if response.status_code == 200:
                 tokens = response.json()
-                request.session['access_token'] = tokens['access_token']
-                request.session['refresh_token'] = tokens['refresh_token']
+                request.session["access_token"] = tokens["access_token"]
+                request.session["refresh_token"] = tokens["refresh_token"]
 
                 # Получаем данные пользователя
                 user_response = requests.get(
                     f"{settings.AUTH_SERVICE_URL}/auth/me",
-                    params={'token': tokens['access_token']}
+                    params={"token": tokens["access_token"]},
                 )
 
                 if user_response.status_code != 200:
@@ -33,7 +33,7 @@ class ExternalAuthBackend(BaseBackend):
                 user_data = user_response.json()
 
                 # Проверяем наличие email
-                email = user_data.get('email')
+                email = user_data.get("email")
                 if not email:
                     # Если email не получен от сервиса аутентификации,
                     # пытаемся найти существующего пользователя
@@ -48,10 +48,10 @@ class ExternalAuthBackend(BaseBackend):
                 user, _ = User.objects.update_or_create(
                     username=username,
                     defaults={
-                        'is_staff': True,  # Для доступа к админке
-                        'is_superuser': user_data.get('is_superuser', False),
-                        'email': email
-                    }
+                        "is_staff": True,  # Для доступа к админке
+                        "is_superuser": user_data.get("is_superuser", False),
+                        "email": email,
+                    },
                 )
                 return user
 

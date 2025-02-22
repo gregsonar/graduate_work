@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class TariffSchema(BaseModel):
     """Schema for tariff details"""
+
     id: UUID = Field(description="Unique identifier of the tariff")
     name: str = Field(description="Name of the tariff")
     description: str = Field(description="Description of the tariff")
@@ -17,14 +18,15 @@ class TariffSchema(BaseModel):
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "name": "Standard",
                 "description": "Basic tariff plan",
-                "price": 99
+                "price": 99,
             }
-        }
+        },
     )
 
 
 class PaymentSchema(BaseModel):
     """Schema for payment details"""
+
     id: UUID = Field(description="Unique identifier of the payment")
     user_id: UUID = Field(description="User ID associated with the payment")
     tariff_id: UUID = Field(description="Tariff ID associated with the payment")
@@ -40,7 +42,7 @@ class PaymentSchema(BaseModel):
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "123e4567-e89b-12d3-a456-426614174001",
                 "tariff_id": "123e4567-e89b-12d3-a456-426614174002",
-                "status": "paid"
+                "status": "paid",
             }
-        }
+        },
     )

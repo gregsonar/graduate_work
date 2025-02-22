@@ -13,7 +13,11 @@ def configure_tracer() -> None:
 
     resource = Resource(attributes={"service.name": SERVICE_NAME})
     provider = TracerProvider(resource=resource)
-    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=f"http://{COLLECTOR_ENDPOINT}:{COLLECTOR_PORT}/v1/traces"))
+    processor = BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=f"http://{COLLECTOR_ENDPOINT}:{COLLECTOR_PORT}/v1/traces"
+        )
+    )
     provider.add_span_processor(processor)
 
     trace.set_tracer_provider(provider)

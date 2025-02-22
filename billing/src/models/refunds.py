@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 class RefundModel(Base, UUIDMixin, TimeStampedMixin):
     """Модель возврата стоимости подписки."""
+
     __tablename__ = "refund"
 
     payment_id = Column(String, nullable=False)

@@ -13,7 +13,9 @@ class TimestampMixin:
 
     @declared_attr
     def updated_at(cls) -> Mapped[datetime]:
-        return Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+        return Column(
+            DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        )
 
 
 class CRUDMixin:

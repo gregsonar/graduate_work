@@ -8,6 +8,7 @@ class UserBrief(BaseResponse):
     id: UUID4
     username: str
 
+
 class AccessLogResponse(BaseResponse):
     id: UUID4
     user_id: UUID4
@@ -17,8 +18,10 @@ class AccessLogResponse(BaseResponse):
     created_at: datetime
     updated_at: datetime
 
+
 class AccessLogWithUserResponse(AccessLogResponse):
     user: UserBrief
+
 
 class AccessLogListResponse(BaseResponse):
     items: List[AccessLogResponse]

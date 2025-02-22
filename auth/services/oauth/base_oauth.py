@@ -23,11 +23,11 @@ class OAuthFlowStrategy(ABC):
 
     @abstractmethod
     async def exchange_code_for_token(
-            self,
-            code: str,
-            state: Optional[str] = None,
-            device_id: Optional[str] = None,
-            **kwargs
+        self,
+        code: str,
+        state: Optional[str] = None,
+        device_id: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """Exchange authorization code for tokens"""
         pass
@@ -43,13 +43,14 @@ class PKCEFlowStrategy(OAuthFlowStrategy):
     async def generate_code_verifier(self, length: int = 64) -> str:
         """Generate PKCE code verifier"""
         import string
-        alphabet = string.ascii_letters + string.digits + '-._~'
-        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+        alphabet = string.ascii_letters + string.digits + "-._~"
+        return "".join(secrets.choice(alphabet) for _ in range(length))
 
     async def generate_code_challenge(self, code_verifier: str) -> str:
         """Generate PKCE code challenge"""
         sha256_hash = hashlib.sha256(code_verifier.encode()).digest()
-        return base64.urlsafe_b64encode(sha256_hash).decode().rstrip('=')
+        return base64.urlsafe_b64encode(sha256_hash).decode().rstrip("=")
 
     async def generate_auth_params(self) -> Dict[str, str]:
         """Generate parameters for PKCE authorization"""
@@ -64,15 +65,15 @@ class PKCEFlowStrategy(OAuthFlowStrategy):
         return {
             "state": state,
             "code_challenge": code_challenge,
-            "code_challenge_method": "S256"
+            "code_challenge_method": "S256",
         }
 
     async def exchange_code_for_token(
-            self,
-            code: str,
-            state: Optional[str] = None,
-            device_id: Optional[str] = None,
-            **kwargs
+        self,
+        code: str,
+        state: Optional[str] = None,
+        device_id: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """Exchange authorization code for tokens using PKCE flow"""
         if not state:
@@ -86,13 +87,13 @@ class PKCEFlowStrategy(OAuthFlowStrategy):
             raise ValueError("Invalid or expired state parameter")
 
         params = {
-            'grant_type': 'authorization_code',
-            'client_id': self.settings.client_id,
-            'client_secret': self.settings.client_secret,
-            'redirect_uri': self.settings.redirect_url,
-            'code': code,
-            'code_verifier': code_verifier.decode(),
-            'device_id': device_id
+            "grant_type": "authorization_code",
+            "client_id": self.settings.client_id,
+            "client_secret": self.settings.client_secret,
+            "redirect_uri": self.settings.redirect_url,
+            "code": code,
+            "code_verifier": code_verifier.decode(),
+            "device_id": device_id,
         }
 
         # Add any additional parameters
@@ -100,22 +101,20 @@ class PKCEFlowStrategy(OAuthFlowStrategy):
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    self.settings.token_url,
-                    data=params,
-                    ssl=False
+                self.settings.token_url, data=params, ssl=False
             ) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Failed to exchange code: HTTP {response.status}, {error_text}"
+                        detail=f"Failed to exchange code: HTTP {response.status}, {error_text}",
                     )
 
                 data = await response.json()
-                if 'error' in data:
+                if "error" in data:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"OAuth error: {data.get('error_description', data['error'])}"
+                        detail=f"OAuth error: {data.get('error_description', data['error'])}",
                     )
 
                 # Delete used code_verifier
@@ -132,45 +131,37 @@ class SimpleOAuthFlowStrategy(OAuthFlowStrategy):
 
     async def generate_auth_params(self) -> Dict[str, str]:
         """Generate parameters for simple OAuth flow"""
-        return {
-            "state": secrets.token_urlsafe(32)
-        }
+        return {"state": secrets.token_urlsafe(32)}
 
     async def exchange_code_for_token(
-            self,
-            code: str,
-            state: Optional[str] = None,
-            **kwargs
+        self, code: str, state: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         """Exchange authorization code for tokens using simple OAuth flow"""
         params = {
-            'grant_type': 'authorization_code',
-            'client_id': self.settings.client_id,
-            'client_secret': self.settings.client_secret,
-            'redirect_uri': self.settings.redirect_url,
-            'code': code
+            "grant_type": "authorization_code",
+            "client_id": self.settings.client_id,
+            "client_secret": self.settings.client_secret,
+            "redirect_uri": self.settings.redirect_url,
+            "code": code,
         }
 
         # Add any additional parameters
         params.update(kwargs)
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                    self.settings.token_url,
-                    data=params
-            ) as response:
+            async with session.post(self.settings.token_url, data=params) as response:
                 if response.status != 200:
                     error_text = await response.text()
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Failed to exchange code: HTTP {response.status}, {error_text}"
+                        detail=f"Failed to exchange code: HTTP {response.status}, {error_text}",
                     )
 
                 data = await response.json()
-                if 'error' in data:
+                if "error" in data:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"OAuth error: {data.get('error_description', data['error'])}"
+                        detail=f"OAuth error: {data.get('error_description', data['error'])}",
                     )
 
                 return data
@@ -180,12 +171,12 @@ class BaseOAuthService(ABC):
     """Base class for OAuth services"""
 
     def __init__(
-            self,
-            session: AsyncSession,
-            redis: Redis,
-            auth_service: AuthService,
-            settings: OAuthProviderSettings,
-            flow_strategy: OAuthFlowStrategy
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_service: AuthService,
+        settings: OAuthProviderSettings,
+        flow_strategy: OAuthFlowStrategy,
     ):
         self.session = session
         self.redis = redis
@@ -222,34 +213,38 @@ class BaseOAuthService(ABC):
             "client_id": self.settings.client_id,
             "redirect_uri": self.settings.redirect_url,
             "response_type": "code",
-            **auth_params
+            **auth_params,
         }
 
         query = "&".join(f"{k}={v}" for k, v in params.items())
         return {
             "auth_url": f"{self.settings.auth_url}?{query}",
-            "state": auth_params.get("state")
+            "state": auth_params.get("state"),
         }
 
     @abstractmethod
-    async def process_user_info(self, user_info: Dict[str, Any], token_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_user_info(
+        self, user_info: Dict[str, Any], token_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Process user information into standard format"""
         pass
 
     async def authenticate(
-            self,
-            code: str,
-            state: Optional[str] = None,
-            metadata: Optional[Dict[str, Any]] = None,
-            device_id: Optional[str] = None,
-            **kwargs
+        self,
+        code: str,
+        state: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        device_id: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, str]:
         """Complete authentication flow"""
         # Exchange code for token
-        token_data = await self.flow_strategy.exchange_code_for_token(code, state, device_id, **kwargs)
+        token_data = await self.flow_strategy.exchange_code_for_token(
+            code, state, device_id, **kwargs
+        )
 
         # Get user information
-        user_info = await self.get_user_info(token_data['access_token'])
+        user_info = await self.get_user_info(token_data["access_token"])
 
         # Process user data
         social_data = await self.process_user_info(user_info, token_data)
@@ -257,7 +252,7 @@ class BaseOAuthService(ABC):
         # Authenticate using auth service
         return await self.auth_service.authenticate_social_user(
             provider=await self.get_provider(),
-            social_id=str(user_info.get('user_id')),
+            social_id=str(user_info.get("user_id")),
             social_data=social_data,
-            metadata=metadata
+            metadata=metadata,
         )

@@ -4,30 +4,28 @@ from uuid import UUID
 from datetime import datetime
 from .entity import BaseResponse
 
+
 class AuthRequest(BaseResponse):
     """Authentication request schema"""
+
     username: str = Field(
-        ...,
-        min_length=3,
-        max_length=50,
-        description="Username for authentication"
+        ..., min_length=3, max_length=50, description="Username for authentication"
     )
     password: str = Field(
         ...,
         # min_length=8,
-        description="User password"
+        description="User password",
     )
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "username": "john_doe",
-                "password": "secure_password123"
-            }
+            "example": {"username": "john_doe", "password": "secure_password123"}
         }
+
 
 class TokenResponse(BaseModel):
     """Token response schema"""
+
     access_token: str = Field(..., description="JWT access token")
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: Optional[str] = Field(default="bearer", description="Token type")
@@ -37,33 +35,19 @@ class TokenResponse(BaseModel):
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIs...",
                 "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
-                "token_type": "bearer"
+                "token_type": "bearer",
             }
         }
 
 
 class CurrentUserResponse(BaseResponse):
     """Current user information response schema"""
-    id: UUID = Field(
-        ...,
-        description="User's unique identifier"
-    )
-    username: str = Field(
-        ...,
-        description="User's username"
-    )
-    is_superuser: bool = Field(
-        ...,
-        description="Superuser status"
-    )
-    roles: List[str] = Field(
-        ...,
-        description="List of user's roles"
-    )
-    email: Optional[str] = Field(
-        None,
-        description="User's email address"
-    )
+
+    id: UUID = Field(..., description="User's unique identifier")
+    username: str = Field(..., description="User's username")
+    is_superuser: bool = Field(..., description="Superuser status")
+    roles: List[str] = Field(..., description="List of user's roles")
+    email: Optional[str] = Field(None, description="User's email address")
 
     class Config:
         from_attributes = True
@@ -75,20 +59,15 @@ class CurrentUserResponse(BaseResponse):
                 "roles": ["user", "admin"],
                 "email": "john@example.com",
                 "created_at": "2024-01-01T00:00:00",
-                "last_login": "2024-01-01T12:00:00"
+                "last_login": "2024-01-01T12:00:00",
             }
         }
+
 
 class LogoutResponse(BaseResponse):
     """Logout response schema"""
-    detail: str = Field(
-        ...,
-        description="Logout operation result message"
-    )
+
+    detail: str = Field(..., description="Logout operation result message")
 
     class Config:
-        json_schema_extra = {
-            "example": {
-                "detail": "Successfully logged out"
-            }
-        }
+        json_schema_extra = {"example": {"detail": "Successfully logged out"}}

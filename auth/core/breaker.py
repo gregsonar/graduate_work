@@ -19,13 +19,13 @@ class CircuitState(Enum):
 
 class AsyncCircuitBreaker:
     def __init__(
-            self,
-            redis: Redis,
-            service_name: str = "auth",
-            failure_threshold: int = 5,
-            recovery_timeout: int = 60,
-            half_open_max_tries: int = 3,
-            cache_ttl: int = 300
+        self,
+        redis: Redis,
+        service_name: str = "auth",
+        failure_threshold: int = 5,
+        recovery_timeout: int = 60,
+        half_open_max_tries: int = 3,
+        cache_ttl: int = 300,
     ):
         self.redis = redis
         self.service_name = service_name
@@ -57,11 +57,7 @@ class AsyncCircuitBreaker:
     async def _cache_token(self, user_id: str, token_data: dict):
         """Кэширование токена"""
         cache_key = f"auth_token_cache:{user_id}"
-        await self.redis.setex(
-            cache_key,
-            self.cache_ttl,
-            json.dumps(token_data)
-        )
+        await self.redis.setex(cache_key, self.cache_ttl, json.dumps(token_data))
         logger.debug(f"Cached token for user {user_id}")
 
     async def _record_failure(self):
@@ -82,14 +78,14 @@ class AsyncCircuitBreaker:
     async def _get_validate_token_fallback(self) -> dict:
         """Fallback для метода validate_token"""
         return {
-            "user_id": str(UUID('00000000-0000-0000-0000-000000000000')),
+            "user_id": str(UUID("00000000-0000-0000-0000-000000000000")),
             "username": "guest",
             "is_superuser": False,
             "roles": ["guest"],
             "exp": (datetime.now(UTC).timestamp() + 3600),  # 1 час
             "iat": datetime.now(UTC).timestamp(),
-            "jti": str(UUID('00000000-0000-0000-0000-000000000000')),
-            "token_type": "access"
+            "jti": str(UUID("00000000-0000-0000-0000-000000000000")),
+            "token_type": "access",
         }
 
     async def _get_create_tokens_fallback(self):
@@ -98,7 +94,7 @@ class AsyncCircuitBreaker:
             "access_token": "guest_token",
             "refresh_token": None,
             "exp": (datetime.now(UTC).timestamp() + 3600),
-            "token_type": "access"
+            "token_type": "access",
         }
 
     async def _get_authenticate_fallback(self) -> dict:
@@ -107,11 +103,11 @@ class AsyncCircuitBreaker:
             "access_token": "guest_token",
             "refresh_token": None,
             "user": {
-                "id": str(UUID('00000000-0000-0000-0000-000000000000')),
+                "id": str(UUID("00000000-0000-0000-0000-000000000000")),
                 "username": "guest",
                 "is_superuser": False,
-                "roles": ["guest"]
-            }
+                "roles": ["guest"],
+            },
         }
 
     async def _get_refresh_token_fallback(self) -> dict:
@@ -120,22 +116,26 @@ class AsyncCircuitBreaker:
             "access_token": "guest_token",
             "refresh_token": None,
             "exp": (datetime.now(UTC).timestamp() + 3600),
-            "token_type": "access"
+            "token_type": "access",
         }
 
-    async def _handle_fallback(self, method_name: str, user_id: Optional[str] = None) -> dict:
+    async def _handle_fallback(
+        self, method_name: str, user_id: Optional[str] = None
+    ) -> dict:
         """Обработка fallback сценария в зависимости от метода"""
         if user_id:
             cached_token = await self._get_cached_token(user_id)
             if cached_token:
-                logger.info(f"Using cached token for user {user_id} in {method_name} fallback")
+                logger.info(
+                    f"Using cached token for user {user_id} in {method_name} fallback"
+                )
                 return cached_token
 
         fallback_handlers = {
             "validate_token": self._get_validate_token_fallback,
             "create_tokens_for_user": self._get_create_tokens_fallback,
             "authenticate_user": self._get_authenticate_fallback,
-            "refresh_token": self._get_refresh_token_fallback
+            "refresh_token": self._get_refresh_token_fallback,
         }
 
         handler = fallback_handlers.get(method_name)
@@ -144,11 +144,13 @@ class AsyncCircuitBreaker:
             return await handler()
 
         # Дефолтный fallback, если метод не определен
-        logger.warning(f"No specific fallback handler for method {method_name}, using default")
+        logger.warning(
+            f"No specific fallback handler for method {method_name}, using default"
+        )
         return {
             "access_token": "guest_token",
             "refresh_token": None,
-            "permissions": ["read_basic"]
+            "permissions": ["read_basic"],
         }
 
     def __call__(self, func: Callable):
@@ -158,15 +160,20 @@ class AsyncCircuitBreaker:
 
             if current_state == CircuitState.OPEN:
                 last_failure_bytes = await self.redis.get(self.last_failure_key)
-                last_failure = float(last_failure_bytes.decode()) if last_failure_bytes else 0
+                last_failure = (
+                    float(last_failure_bytes.decode()) if last_failure_bytes else 0
+                )
 
-                if asyncio.get_event_loop().time() - last_failure > self.recovery_timeout:
+                if (
+                    asyncio.get_event_loop().time() - last_failure
+                    > self.recovery_timeout
+                ):
                     await self.redis.set(self.state_key, CircuitState.HALF_OPEN.value)
                     await self.redis.set(self.half_open_tries_key, "0")
                     logger.info("Circuit breaker entering HALF_OPEN state")
                 else:
                     method_name = func.__name__
-                    user_id = kwargs.get('user_id')
+                    user_id = kwargs.get("user_id")
                     if not user_id and len(args) > 1:
                         user_id = str(args[1])
                     return await self._handle_fallback(method_name, user_id)
@@ -182,10 +189,12 @@ class AsyncCircuitBreaker:
                         await self.redis.delete(self.failures_key)
                         logger.info("Circuit breaker closed after successful recovery")
                     else:
-                        logger.info(f"Circuit breaker remains in HALF-OPEN state, successful tries: {tries}")
+                        logger.info(
+                            f"Circuit breaker remains in HALF-OPEN state, successful tries: {tries}"
+                        )
 
-                if 'user_id' in kwargs:
-                    await self._cache_token(kwargs['user_id'], result)
+                if "user_id" in kwargs:
+                    await self._cache_token(kwargs["user_id"], result)
 
                 return result
 

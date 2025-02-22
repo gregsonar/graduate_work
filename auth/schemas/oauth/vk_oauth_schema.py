@@ -9,6 +9,7 @@ class SocialAccountBase(BaseModel):
     """
     Базовая схема для социального аккаунта.
     """
+
     provider: SocialProvider = Field(
         description="Провайдер социальной сети (vk, google, github, telegram)"
     )
@@ -16,62 +17,48 @@ class SocialAccountBase(BaseModel):
         description="Уникальный идентификатор пользователя в социальной сети"
     )
     social_username: Optional[str] = Field(
-        None,
-        description="Имя пользователя в социальной сети"
+        None, description="Имя пользователя в социальной сети"
     )
     social_email: Optional[str] = Field(
-        None,
-        description="Email пользователя из социальной сети"
+        None, description="Email пользователя из социальной сети"
     )
-    first_name: Optional[str] = Field(
-        None,
-        description="Имя пользователя"
-    )
-    last_name: Optional[str] = Field(
-        None,
-        description="Фамилия пользователя"
-    )
-    avatar_url: Optional[str] = Field(
-        None,
-        description="URL аватара пользователя"
-    )
+    first_name: Optional[str] = Field(None, description="Имя пользователя")
+    last_name: Optional[str] = Field(None, description="Фамилия пользователя")
+    avatar_url: Optional[str] = Field(None, description="URL аватара пользователя")
     is_primary: bool = Field(
         False,
         description="Является ли этот аккаунт основным способом входа",
     )
+
 
 class SocialAccountCreate(SocialAccountBase):
     """
     Схема для создания нового социального аккаунта.
     Включает чувствительные данные, такие как токены.
     """
-    access_token: str = Field(
-        description="Токен доступа к API социальной сети"
-    )
+
+    access_token: str = Field(description="Токен доступа к API социальной сети")
     refresh_token: Optional[str] = Field(
-        None,
-        description="Токен для обновления access token"
+        None, description="Токен для обновления access token"
     )
     token_expires_at: Optional[datetime] = Field(
-        None,
-        description="Дата и время истечения срока действия токена"
+        None, description="Дата и время истечения срока действия токена"
     )
     metadata: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Дополнительные метаданные от социальной сети"
+        None, description="Дополнительные метаданные от социальной сети"
     )
+
 
 class SocialAccountResponse(SocialAccountBase):
     """
     Схема для ответа с данными социального аккаунта.
     Не включает чувствительные данные.
     """
+
     id: str = Field(
         description="Уникальный идентификатор записи в нашей системе",
     )
-    created_at: datetime = Field(
-        description="Дата и время создания записи"
-    )
+    created_at: datetime = Field(description="Дата и время создания записи")
     updated_at: datetime = Field(
         description="Дата и время последнего обновления записи"
     )
@@ -95,14 +82,16 @@ class SocialAccountResponse(SocialAccountBase):
                 "is_primary": False,
                 "created_at": "2024-01-01T12:00:00",
                 "updated_at": "2024-01-01T12:00:00",
-                "token_expires_at": "2024-12-31T23:59:59"
+                "token_expires_at": "2024-12-31T23:59:59",
             }
         }
+
 
 class SocialAccountList(BaseModel):
     """
     Схема для списка социальных аккаунтов пользователя.
     """
+
     accounts: List[SocialAccountResponse] = Field(
         description="Список привязанных социальных аккаунтов",
     )
@@ -123,7 +112,7 @@ class SocialAccountList(BaseModel):
                         "is_primary": True,
                         "created_at": "2024-01-01T12:00:00",
                         "updated_at": "2024-01-01T12:00:00",
-                        "token_expires_at": "2024-12-31T23:59:59"
+                        "token_expires_at": "2024-12-31T23:59:59",
                     },
                     {
                         "id": "660e8400-e29b-41d4-a716-446655440000",
@@ -137,54 +126,45 @@ class SocialAccountList(BaseModel):
                         "is_primary": False,
                         "created_at": "2024-01-02T12:00:00",
                         "updated_at": "2024-01-02T12:00:00",
-                        "token_expires_at": "2024-12-31T23:59:59"
-                    }
+                        "token_expires_at": "2024-12-31T23:59:59",
+                    },
                 ]
             }
         }
+
 
 class VKAuthUrlResponse(BaseResponse):
     """
     Схема ответа с URL для авторизации через VK
     """
-    auth_url: str = Field(
-        ...,
-        description="URL для авторизации через VK"
-    )
+
+    auth_url: str = Field(..., description="URL для авторизации через VK")
     state: str = Field(
-        ...,
-        description="Случайная строка для защиты от CSRF атак",
-        min_length=32
+        ..., description="Случайная строка для защиты от CSRF атак", min_length=32
     )
 
     class Config:
         json_schema_extra = {
             "example": {
                 "auth_url": "https://id.vk.com/authorize?client_id=12345&redirect_uri=https://example.com/callback&response_type=code&scope=email&v=5.131&state=abc123def456&code_challenge=xyz789&code_challenge_method=S256",
-                "state": "abc123def456..."
+                "state": "abc123def456...",
             }
         }
+
 
 class VKCallbackRequest(BaseResponse):
     """
     Схема для параметров callback запроса от VK
     """
-    code: str = Field(
-        ...,
-        description="Код авторизации от VK"
-    )
+
+    code: str = Field(..., description="Код авторизации от VK")
     state: str = Field(
-        ...,
-        description="Строка state, переданная при инициации авторизации"
+        ..., description="Строка state, переданная при инициации авторизации"
     )
     error: Optional[str] = Field(
-        None,
-        description="Код ошибки, если авторизация не удалась"
+        None, description="Код ошибки, если авторизация не удалась"
     )
-    error_description: Optional[str] = Field(
-        None,
-        description="Описание ошибки"
-    )
+    error_description: Optional[str] = Field(None, description="Описание ошибки")
 
     class Config:
         json_schema_extra = {
@@ -192,6 +172,6 @@ class VKCallbackRequest(BaseResponse):
                 "code": "def456...",
                 "state": "abc123def456...",
                 "error": "access_denied",
-                "error_description": "User denied access"
+                "error_description": "User denied access",
             }
         }

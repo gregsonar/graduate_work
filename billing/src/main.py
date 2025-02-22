@@ -18,18 +18,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title='BillingService',
+    title="BillingService",
     docs_url="/api/openapi",
     openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
     root_path="/api/billing",
-    swagger_ui_parameters={"defaultModelsExpandDepth": -1}
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},
 )
 
 app.swagger_ui_init_oauth = {
     "usePkceWithAuthorizationCodeGrant": True,
-    "persistAuthorization": True
+    "persistAuthorization": True,
 }
 
 app.openapi_components = {
@@ -39,8 +39,8 @@ app.openapi_components = {
             "scheme": "bearer",
             "bearerFormat": "JWT",
             "description": "Введите ваш JWT токен в формате:"
-                           " **Bearer &lt;token&gt;**\n\n"
-                           "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
+            " **Bearer &lt;token&gt;**\n\n"
+            "Например: Bearer eyJhbGciOiJIUzI1NiIs...",
         }
     }
 }
@@ -55,10 +55,7 @@ async def project_error_handler(request: Request, exc: BaseErrorWithContent):
         content=exc.content,
     )
 
-app.include_router(
-    healthcheck.router,
-    prefix="/api/v1/billing",
-    tags=['health']
-)
-app.include_router(tariffs.router, prefix="/api/v1/billing", tags=['tariffs'])
-app.include_router(billing.router, prefix="/api/v1/billing", tags=['billing'])
+
+app.include_router(healthcheck.router, prefix="/api/v1/billing", tags=["health"])
+app.include_router(tariffs.router, prefix="/api/v1/billing", tags=["tariffs"])
+app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])

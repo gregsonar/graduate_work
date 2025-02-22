@@ -12,4 +12,6 @@ class Base(DeclarativeBase):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(DateTime(timezone=True), default=datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=datetime.now(UTC), onupdate=datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True), default=datetime.now(UTC), onupdate=datetime.now(UTC)
+    )

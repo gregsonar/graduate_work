@@ -19,10 +19,7 @@ class UserConsumer:
             session = self.Session()
 
             # Создаем пользователя в БД уведомлений
-            user = User(
-                id=message['user_id'],
-                email=message['email']
-            )
+            user = User(id=message["user_id"], email=message["email"])
 
             session.add(user)
             session.commit()
@@ -39,9 +36,9 @@ class UserConsumer:
                 sender_email=config.mailer_from_email,
                 dsl=config.dsl_for_notifications,
                 message_table_name=config.notifications_table_name,
-                templates_dir='templates',
-                template_name='welcome.html',
-                subject='Welcome to our perfect theater'
+                templates_dir="templates",
+                template_name="welcome.html",
+                subject="Welcome to our perfect theater",
             )
 
             message_processor.process_message(message)
@@ -53,7 +50,7 @@ class UserConsumer:
             session.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     consumer = UserConsumer()
 
     notificator = Notificator(

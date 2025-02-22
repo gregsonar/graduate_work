@@ -14,8 +14,14 @@ from .base_models import TimestampMixin
 class AccessLog(Base, TimestampMixin):
     __tablename__ = "access_logs"
 
-    id: Mapped[uuid.UUID] = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-    user_id: Mapped[uuid.UUID] = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    id: Mapped[uuid.UUID] = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+    user_id: Mapped[uuid.UUID] = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     ip_address: Mapped[str] = Column(INET)
     user_agent: Mapped[str] = Column(Text)
     accessed_at: Mapped[datetime] = Column(DateTime, default=func.now(), nullable=False)
@@ -24,9 +30,9 @@ class AccessLog(Base, TimestampMixin):
     user: Mapped["User"] = relationship("User", back_populates="access_logs")
 
     __table_args__ = (
-        Index('ix_access_logs_user_id', 'user_id'),
-        Index('ix_access_logs_accessed_at', 'accessed_at'),
-        Index('ix_access_logs_ip_address', 'ip_address'),
+        Index("ix_access_logs_user_id", "user_id"),
+        Index("ix_access_logs_accessed_at", "accessed_at"),
+        Index("ix_access_logs_ip_address", "ip_address"),
     )
 
     def __init__(self, user_id: uuid.UUID, ip_address: str, user_agent: str) -> None:

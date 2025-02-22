@@ -7,14 +7,11 @@ from starlette import status
 
 logger = logging.getLogger(__name__)
 
-oauth2_scheme = HTTPBearer(
-    scheme_name="Bearer",
-    description="JWT token authentication"
-)
+oauth2_scheme = HTTPBearer(scheme_name="Bearer", description="JWT token authentication")
 
 
 async def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
 ):
     """Get current user from auth service"""
     authorization = f"{credentials.scheme} {credentials.credentials}"
@@ -22,7 +19,7 @@ async def get_current_user(
         try:
             response = await client.get(
                 "http://auth_api:8000/api/v1/auth/me",
-                headers={"Authorization": authorization}
+                headers={"Authorization": authorization},
             )
 
             logger.info(f"Auth service response status: {response.status_code}")
@@ -31,7 +28,7 @@ async def get_current_user(
             if response.status_code == 401:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials"
+                    detail="Invalid authentication credentials",
                 )
 
             try:
@@ -42,23 +39,20 @@ async def get_current_user(
                 logger.error(f"Failed to parse JSON response: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Invalid response from auth service"
+                    detail="Invalid response from auth service",
                 )
 
         except httpx.RequestError as e:
             logger.error(f"Request to auth service failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Auth service is unavailable"
+                detail="Auth service is unavailable",
             )
 
 
 async def get_admin_user(current_user=Depends(get_current_user)):
-    if not any(
-            role in ["admin", "superuser"] for role in current_user["roles"]
-    ):
+    if not any(role in ["admin", "superuser"] for role in current_user["roles"]):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
         )
     return current_user

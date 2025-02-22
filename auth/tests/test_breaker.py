@@ -16,7 +16,9 @@ async def test_circuit_breaker_initial_state(circuit_breaker, mock_redis_client)
 
 
 @pytest.mark.asyncio
-async def test_circuit_breaker_opens_after_failures(circuit_breaker, mock_service, mock_redis_client):
+async def test_circuit_breaker_opens_after_failures(
+    circuit_breaker, mock_service, mock_redis_client
+):
     """Test circuit breaker opens after threshold failures"""
     state_key = f"{circuit_breaker._prefix}:state"
     failures_key = f"{circuit_breaker._prefix}:failures"
@@ -31,7 +33,11 @@ async def test_circuit_breaker_opens_after_failures(circuit_breaker, mock_servic
             return str(mock_state["failure_count"]).encode()
         elif key == state_key:
             # Возвращаем OPEN когда достигнут порог ошибок
-            return b"OPEN" if mock_state["failure_count"] >= circuit_breaker.failure_threshold else None
+            return (
+                b"OPEN"
+                if mock_state["failure_count"] >= circuit_breaker.failure_threshold
+                else None
+            )
         return None
 
     async def mock_set(*args, **kwargs):
@@ -61,12 +67,16 @@ async def test_circuit_breaker_opens_after_failures(circuit_breaker, mock_servic
 
 
 @pytest.mark.asyncio
-async def test_circuit_breaker_fallback(circuit_breaker, mock_service, mock_redis_client):
+async def test_circuit_breaker_fallback(
+    circuit_breaker, mock_service, mock_redis_client
+):
     """Test fallback mechanism when circuit is open"""
     responses = {
         f"{circuit_breaker._prefix}:state": b"OPEN",
-        f"{circuit_breaker._prefix}:last_failure": str(asyncio.get_event_loop().time()).encode(),
-        f"auth_token_cache:test_user": None
+        f"{circuit_breaker._prefix}:last_failure": str(
+            asyncio.get_event_loop().time()
+        ).encode(),
+        f"auth_token_cache:test_user": None,
     }
 
     def mock_get(key):
@@ -84,7 +94,9 @@ async def test_circuit_breaker_fallback(circuit_breaker, mock_service, mock_redi
 
 
 @pytest.mark.asyncio
-async def test_circuit_breaker_recovery(circuit_breaker, mock_service, mock_redis_client):
+async def test_circuit_breaker_recovery(
+    circuit_breaker, mock_service, mock_redis_client
+):
     """Test circuit breaker recovery through half-open state"""
     current_time = asyncio.get_event_loop().time()
     old_failure_time = current_time - circuit_breaker.recovery_timeout - 1
@@ -92,7 +104,7 @@ async def test_circuit_breaker_recovery(circuit_breaker, mock_service, mock_redi
     responses = {
         f"{circuit_breaker._prefix}:state": b"OPEN",
         f"{circuit_breaker._prefix}:last_failure": str(old_failure_time).encode(),
-        f"{circuit_breaker._prefix}:half_open_tries": b"0"
+        f"{circuit_breaker._prefix}:half_open_tries": b"0",
     }
 
     def mock_get(key):
@@ -130,12 +142,11 @@ async def test_circuit_breaker_recovery(circuit_breaker, mock_service, mock_redi
 
 
 @pytest.mark.asyncio
-async def test_circuit_breaker_token_caching(circuit_breaker, mock_service, mock_redis_client):
+async def test_circuit_breaker_token_caching(
+    circuit_breaker, mock_service, mock_redis_client
+):
     """Test token caching mechanism"""
-    test_token = {
-        "access_token": "test_token",
-        "refresh_token": "refresh"
-    }
+    test_token = {"access_token": "test_token", "refresh_token": "refresh"}
 
     cache_key = f"auth_token_cache:test_user"
     cached_value = json.dumps(test_token).encode()

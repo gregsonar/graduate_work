@@ -14,7 +14,13 @@ from .base_models import TimestampMixin, CRUDMixin
 class Role(Base, TimestampMixin, CRUDMixin):
     __tablename__ = "roles"
 
-    id: Mapped[uuid.UUID] = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    id: Mapped[uuid.UUID] = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
     name: Mapped[str] = Column(String(100), unique=True, nullable=False)
     description: Mapped[Optional[str]] = Column(Text)
 
@@ -24,18 +30,18 @@ class Role(Base, TimestampMixin, CRUDMixin):
         secondary="user_roles",
         primaryjoin="Role.id == UserRole.role_id",
         secondaryjoin="UserRole.user_id == User.id",
-        back_populates="roles"
+        back_populates="roles",
     )
 
     __table_args__ = (
-        Index('ix_roles_name', 'name'),
-        Index('ix_roles_is_active', 'is_active'),
-        Index('ix_roles_is_deleted', 'is_deleted'),
+        Index("ix_roles_name", "name"),
+        Index("ix_roles_is_active", "is_active"),
+        Index("ix_roles_is_deleted", "is_deleted"),
     )
 
-    def __init__(self, name: str,
-                 description: Optional[str] = None,
-                 id: Optional[UUID] = None) -> None:
+    def __init__(
+        self, name: str, description: Optional[str] = None, id: Optional[UUID] = None
+    ) -> None:
         super().__init__()
         self.name = name
         self.description = description
@@ -50,7 +56,9 @@ class Role(Base, TimestampMixin, CRUDMixin):
     def get_by_name(cls, name: str) -> Optional[Role]:
         return cls.query.filter_by(name=name, is_deleted=False).first()
 
-    def update(self, name: Optional[str] = None, description: Optional[str] = None) -> None:
+    def update(
+        self, name: Optional[str] = None, description: Optional[str] = None
+    ) -> None:
         if name is not None:
             self.name = name
         if description is not None:

@@ -6,6 +6,7 @@ from billing.src.core.config import settings
 from billing.src.core.exceptions import TariffNotFoundError
 from billing.src.db.postgres import get_session
 from billing.src.models.payments import PaymentModel
+
 # from billing.src.models.refunds import RefundModel
 from billing.src.models.tariffs import TariffModel
 from billing.src.schemas.payment_schemas import CreatedPaymentSchema
@@ -39,8 +40,8 @@ class BillingService:
         new_db_payment = PaymentModel(
             user_id=user_id,
             tariff_id=tariff,
-            status=payment.get('status'),
-            payment_id=payment.get('id'),
+            status=payment.get("status"),
+            payment_id=payment.get("id"),
         )
         self.db_session.add(new_db_payment)
         await self.db_session.commit()
@@ -73,15 +74,13 @@ class BillingService:
                     id=payment.id,
                     user_id=payment.user_id,
                     tariff_id=payment.tariff_id,
-                    status=payment.status
+                    status=payment.status,
                 )
             )
         return payments
 
     async def create_payment(
-        self,
-        user_id: UUID,
-        tariff_id: UUID
+        self, user_id: UUID, tariff_id: UUID
     ) -> CreatedPaymentSchema:
 
         tariff = await self.db_session.get(TariffModel, tariff_id)
@@ -95,29 +94,26 @@ class BillingService:
         )
 
         payment_db = await self.save_payment_in_db(user_id, tariff.id, payment)
-        await subscribe.delay(payment_db.id, payment.get('id'), payment.get('status'))
+        await subscribe.delay(payment_db.id, payment.get("id"), payment.get("status"))
 
         return CreatedPaymentSchema(
-            redirect_url=payment.get('confirmation').get('confirmation_url')
+            redirect_url=payment.get("confirmation").get("confirmation_url")
         )
 
     async def cancel_subscription(
-            self,
-            user_id: UUID,
-            refund: bool,
-            reason: str,
-            immediate: bool,
+        self,
+        user_id: UUID,
+        refund: bool,
+        reason: str,
+        immediate: bool,
     ):
         try:
             # Получаем информацию о подписке
             response = await self._get_subscription(user_id)
-            subscription_id = response.json()['id']
+            subscription_id = response.json()["id"]
 
             # Определяем данные для отмены подписки
-            data = {
-                "reason": reason,
-                "immediate": immediate
-            }
+            data = {"reason": reason, "immediate": immediate}
 
             await self._cancel_subscription(
                 subscription_id,
@@ -141,23 +137,18 @@ class BillingService:
                 )
 
     async def _get_subscription(
-            self,
-            user_id: UUID,
+        self,
+        user_id: UUID,
     ):
         url = self.base_url + f"user/{user_id}"
         response = await self.client.get(url)
         return response
 
-    async def _cancel_subscription(
-            self,
-            subscription_id: UUID,
-            data: dict):
+    async def _cancel_subscription(self, subscription_id: UUID, data: dict):
         url = self.base_url + f"{subscription_id}/cancel"
         response = await self.client.post(url, json=data)
         return response
 
 
-def get_billing_service(
-        session: AsyncSession = Depends(get_session)
-):
+def get_billing_service(session: AsyncSession = Depends(get_session)):
     return BillingService(session)

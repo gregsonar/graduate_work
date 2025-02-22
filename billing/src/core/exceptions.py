@@ -2,8 +2,7 @@ from http import HTTPStatus
 from typing import Any
 
 
-class BaseError(Exception):
-    ...
+class BaseError(Exception): ...
 
 
 class BaseErrorWithContent(BaseError):
@@ -13,39 +12,39 @@ class BaseErrorWithContent(BaseError):
 
 class AlreadySubscribedError(BaseErrorWithContent):
     status_code = HTTPStatus.CONFLICT
-    content = {'message': 'User is already subscribed'}
+    content = {"message": "User is already subscribed"}
 
 
 class TariffNotFoundError(BaseErrorWithContent):
     status_code = HTTPStatus.NOT_FOUND
-    content = {'message': 'Tariff is not found'}
+    content = {"message": "Tariff is not found"}
 
 
 class UserUnauthorizedError(BaseErrorWithContent):
     status_code = HTTPStatus.UNAUTHORIZED
-    content = {'message': 'User is unauthorized'}
+    content = {"message": "User is unauthorized"}
 
 
 class RefundError(BaseErrorWithContent):
     status_code = HTTPStatus.BAD_REQUEST
-    content = {'message': 'Refund was not created'}
+    content = {"message": "Refund was not created"}
 
 
 class SubscriptionNotFoundError(BaseErrorWithContent):
     status_code = HTTPStatus.NOT_FOUND
-    content = {'message': "User doesn't have subscription"}
+    content = {"message": "User doesn't have subscription"}
 
 
 class UserDoesntHaveRightsError(BaseErrorWithContent):
     status_code = HTTPStatus.CONFLICT
-    content = {'message': "User doesn't have rights"}
+    content = {"message": "User doesn't have rights"}
 
 
 class AuthServiceNoResponse(BaseErrorWithContent):
     status_code = HTTPStatus.BAD_GATEWAY
-    content = {'message': 'Auth service doesn\'t reply'}
+    content = {"message": "Auth service doesn't reply"}
 
 
 class AuthServiceBadResponse(BaseErrorWithContent):
     status_code = HTTPStatus.BAD_REQUEST
-    content = {'message': 'Subscription wasn\'t be created in auth service'}
+    content = {"message": "Subscription wasn't be created in auth service"}

@@ -5,6 +5,7 @@ from django.conf import settings
 
 class AuthServiceError(Exception):
     """Ошибка взаимодействия с сервисом авторизации"""
+
     pass
 
 
@@ -13,10 +14,7 @@ def make_auth_request(method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
 
     try:
         response = requests.request(
-            method,
-            url,
-            timeout=settings.AUTH_SERVICE_TIMEOUT,
-            **kwargs
+            method, url, timeout=settings.AUTH_SERVICE_TIMEOUT, **kwargs
         )
         response.raise_for_status()
         return response.json()
@@ -27,9 +25,9 @@ def make_auth_request(method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
 def logout_from_auth_service(access_token: str, refresh_token: str) -> None:
     try:
         make_auth_request(
-            'POST',
-            '/auth/logout',
-            params={'access_token': access_token, 'refresh_token': refresh_token}
+            "POST",
+            "/auth/logout",
+            params={"access_token": access_token, "refresh_token": refresh_token},
         )
     except AuthServiceError:
         pass

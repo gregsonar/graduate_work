@@ -25,10 +25,14 @@ class PaymentJob(Base):
     __tablename__ = "payment_jobs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=False)
+    subscription_id = Column(
+        UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=False
+    )
     payment_id = Column(String, unique=True, nullable=False)
     amount = Column(Float, nullable=False)
-    status = Column(String, nullable=False, default="pending")  # pending, succeeded, failed
+    status = Column(
+        String, nullable=False, default="pending"
+    )  # pending, succeeded, failed
     created_at = Column(DateTime, default=datetime.now(UTC))
     updated_at = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
 

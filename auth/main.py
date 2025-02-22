@@ -26,13 +26,14 @@ async def lifespan(app: FastAPI):
     yield
     await redis_client.close()
 
+
 # Настраиваем Jaeger-трейсер
 configure_tracer()
 
 app = FastAPI(
     title=config.project_name,
-    docs_url='/api/openapi',
-    openapi_url='/api/openapi.json',
+    docs_url="/api/openapi",
+    openapi_url="/api/openapi.json",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
@@ -48,7 +49,7 @@ app.add_middleware(
 # OAuth2 configuration for Swagger UI
 app.swagger_ui_init_oauth = {
     "usePkceWithAuthorizationCodeGrant": True,
-    "persistAuthorization": True
+    "persistAuthorization": True,
 }
 
 # OpenAPI security scheme configuration
@@ -59,7 +60,7 @@ app.openapi_components = {
             "scheme": "bearer",
             "bearerFormat": "JWT",
             "description": "Введите ваш JWT токен в формате: **Bearer &lt;token&gt;**\n\n"
-                         "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
+            "Например: Bearer eyJhbGciOiJIUzI1NiIs...",
         }
     }
 }
@@ -72,10 +73,10 @@ RequestsInstrumentor().instrument()
 FastAPIInstrumentor.instrument_app(app)
 
 # Теги указываем для удобства навигации по документации
-app.include_router(role_api.router, prefix='/api/v1/roles', tags=['roles'])
-app.include_router(auth_api.router, prefix='/api/v1/auth', tags=['auth'])
-app.include_router(vk_router, prefix='/api/v1/auth')
-app.include_router(yandex_router, prefix='/api/v1/auth')
+app.include_router(role_api.router, prefix="/api/v1/roles", tags=["roles"])
+app.include_router(auth_api.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(vk_router, prefix="/api/v1/auth")
+app.include_router(yandex_router, prefix="/api/v1/auth")
 
-if __name__ == '__main__':
-    uvicorn.run("main:app", host='0.0.0.0', port=8001, log_level='info', reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, log_level="info", reload=True)

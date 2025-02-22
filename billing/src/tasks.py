@@ -27,6 +27,7 @@ provider = YooKassaProvider(
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
 )
 
+
 class SubscriptionManager:
     def __init__(self, base_url: str):
         self.base_url = base_url
@@ -72,19 +73,19 @@ class SubscriptionManager:
         end_date = now_utc + timedelta(days=tariff.duration)
 
         data = {
-            'user_id': str(payment.user_id),
-            'plan_type': tariff.name,
-            'start_date': now_utc.isoformat(),
-            'end_date': end_date.isoformat(),
-            'price': float(tariff.price),
-            'plan_id': str(tariff.id)
+            "user_id": str(payment.user_id),
+            "plan_type": tariff.name,
+            "start_date": now_utc.isoformat(),
+            "end_date": end_date.isoformat(),
+            "price": float(tariff.price),
+            "plan_id": str(tariff.id)
         }
 
         response = await self._client.post(self.base_url, json=data)
 
         if response.status_code == httpx.codes.CREATED:
             logger.info("Subscription created successfully")
-            return response.json()['id']
+            return response.json()["id"]
 
         logger.error(
             f"Failed to create subscription. Status: {response.status_code}. Response: {response.text}"
@@ -112,7 +113,7 @@ class SubscriptionManager:
 
         if response.status_code == httpx.codes.OK:
             logger.info(f"Subscription {subscription_data['id']} updated successfully")
-            return subscription_data['id']
+            return subscription_data["id"]
 
         logger.error(
             f"Failed to update subscription. Status: {response.status_code}. Response: {response.text}"
@@ -126,24 +127,26 @@ class SubscriptionManager:
             now_utc: datetime
     ) -> Dict[str, Any]:
         """Prepare data for subscription update based on current status."""
-        if subscription_data['status'] == 'expired':
+        if subscription_data["status"] == "expired":
             return {
-                'status': 'active',
-                'plan_type': tariff.name,
-                'plan_id': str(tariff.id),
-                'end_date': (now_utc + timedelta(days=tariff.duration)).isoformat()
+                "status": "active",
+                "plan_type": tariff.name,
+                "plan_id": str(tariff.id),
+                "end_date": (now_utc + timedelta(days=tariff.duration)).isoformat()
             }
 
-        if subscription_data['status'] == 'pending':
-            return {'status': 'active'}
+        if subscription_data["status"] == "pending":
+            return {"status": "active"}
 
-        old_end_date = datetime.fromisoformat(subscription_data['end_date'].replace('Z', '+00:00'))
+        old_end_date = datetime.fromisoformat(
+            subscription_data["end_date"].replace("Z", "+00:00")
+        )
         new_end_date = old_end_date + timedelta(days=tariff.duration)
 
-        data = {'end_date': new_end_date.isoformat()}
+        data = {"end_date": new_end_date.isoformat()}
 
-        if subscription_data['plan_type'] != tariff.name:
-            data['plan_type'] = tariff.name
+        if subscription_data["plan_type"] != tariff.name:
+            data["plan_type"] = tariff.name
 
         return data
 
@@ -163,7 +166,7 @@ class SubscriptionManager:
     async def _handle_active_subscription(self, subscription: Dict[str, Any]) -> None:
         """Handle active subscription expiration check."""
         end_date = datetime.fromisoformat(
-            subscription["end_date"].replace('Z', '+00:00')
+            subscription["end_date"].replace("Z", "+00:00")
         )
         current_time = datetime.now(timezone.utc)
 
@@ -232,15 +235,15 @@ class AutoPaymentManager:
             if payment_data["status"] == "succeeded":
                 logger.info(f"Payment {payment_data['id']} succeeded")
 
-                subscribe.delay(payment_data['id'], payment_data["status"])
+                subscribe.delay(payment_data["id"], payment_data["status"])
                 return payment_data["id"]
 
             elif payment_data["status"] == "waiting_for_capture":
-                self.provider.capture_payment(payment_data['id'])
+                self.provider.capture_payment(payment_data["id"])
 
                 logger.info(f"Payment {payment_data['id']} was captured successfully")
 
-                self._update_payment_status(payment_data['id'], "succeeded")
+                self._update_payment_status(payment_data["id"], "succeeded")
                 return payment_data["id"]
 
             elif payment_data["status"] == "pending":
@@ -249,7 +252,9 @@ class AutoPaymentManager:
                 # return payment_data["id"]
 
             else:
-                logger.error(f"Payment {payment_data['id']} has unexpected status: {payment_data['status']}")
+                logger.error(
+                    f"Payment {payment_data['id']} has unexpected status: {payment_data['status']}"
+                )
                 raise ValueError(f"Payment failed: {payment_data['status']}")
 
         except ValueError as e:
@@ -268,11 +273,6 @@ class AutoPaymentManager:
             description=f"Autopayment for subscription {subscription['id']}",
             save_payment_method=True
         )
-        # payment_data = self.provider.make_recurrent_payment(
-        #     amount=subscription["price"],
-        #     currency="RUB",
-        #     description=f"Autopayment for subscription {subscription['id']}"
-        # )
         logger.info(f"Payment created in YooKassa: {payment_data.get('id')}")
         return payment_data
 
@@ -282,7 +282,6 @@ class AutoPaymentManager:
             subscription: Dict[str, Any]
     ) -> None:
         """Save payment information to database."""
-
         payment = PaymentModel(
             user_id=subscription["user_id"],
             tariff_id=subscription["plan_id"],

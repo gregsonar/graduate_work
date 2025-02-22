@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.db import connection
 
+
 def healthcheck(request):
     try:
         return JsonResponse({"status": "ok"}, status=200)

@@ -12,16 +12,14 @@ class TemplateDataGetter:
     def __init__(self):
         pass
 
-    def template_data(self) -> Generator['TemplateData', None, None]:
+    def template_data(self) -> Generator["TemplateData", None, None]:
         with psycopg2.connect(**AUTH_DSL) as conn, conn.cursor() as cursor:
-            query = f'SELECT id, first_name, last_name, email  FROM users'
+            query = f"SELECT id, first_name, last_name, email  FROM users"
             cursor.execute(query)
             data = [el for el in cursor]
         for el in data:
             yield TemplateData(
-                user=User(
-                    id=el[0], first_name=el[1], last_name=el[2], email=el[3]
-                )
+                user=User(id=el[0], first_name=el[1], last_name=el[2], email=el[3])
             )
 
 
@@ -34,9 +32,9 @@ class User:
 
     def to_dict(self):
         return {
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'email': self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
         }
 
 
@@ -59,16 +57,16 @@ class TimeTable:
 
     @property
     def key(self) -> str:
-        return f'm{self.min}h{self.h}d{self.day}m{self.month}w{self.week_day}'
+        return f"m{self.min}h{self.h}d{self.day}m{self.month}w{self.week_day}"
 
     def cron_dict(self) -> dict:
         return {
-            'minute': cron_data(self.min),
-            'hour': cron_data(self.h),
-            'day_of_week': cron_data(self.week_day),
-            'month_of_year': cron_data(self.month),
+            "minute": cron_data(self.min),
+            "hour": cron_data(self.h),
+            "day_of_week": cron_data(self.week_day),
+            "month_of_year": cron_data(self.month),
         }
 
 
 def cron_data(val):
-    return val if val != 0 else '*'
+    return val if val != 0 else "*"

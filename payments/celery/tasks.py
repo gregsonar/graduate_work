@@ -26,13 +26,13 @@ celery = Celery("payments")
 celery.conf.broker_url = "redis://localhost:6379/0"
 # Используем встроенный планировщик Celery Beat
 celery.conf.beat_schedule = {
-    'schedule-autopayments-every-12-hours': {
-        'task': 'payments.celery.tasks.schedule_autopayments',
-        'schedule': 12 * 60 * 60,  # каждые 12 часов
+    "schedule-autopayments-every-12-hours": {
+        "task": "payments.celery.tasks.schedule_autopayments",
+        "schedule": 12 * 60 * 60,  # каждые 12 часов
     },
-    'run-task-a-every-10-seconds': {  # задачи только для отладки! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        'task': 'payments.celery.tasks.tasks.task_a',
-        'schedule': 10.0,  # Каждые 10 секунд
+    "run-task-a-every-10-seconds": {  # задачи только для отладки! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        "task": "payments.celery.tasks.tasks.task_a",
+        "schedule": 10.0,  # Каждые 10 секунд
     },
 }
 
@@ -44,7 +44,7 @@ load_dotenv()
 # Инициализация провайдера
 provider = YooKassaProvider(
     account_id=os.getenv("YOOKASSA_SHOP_ID", "1234567"),
-    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123")
+    secret_key=os.getenv("YOOKASSA_API_KEY", "test_apikey123"),
 )
 
 # URL API подписок
@@ -59,7 +59,9 @@ async def fetch_due_subscriptions():
                 if response.status == 200:
                     return await response.json()
                 else:
-                    logger.error(f"Failed to fetch subscriptions, status: {response.status}")
+                    logger.error(
+                        f"Failed to fetch subscriptions, status: {response.status}"
+                    )
                     return []
         except Exception as e:
             logger.error(f"Error fetching subscriptions: {e}")
@@ -89,7 +91,7 @@ def process_autopayment(self, subscription):
             currency="RUB",
             description=f"Autopayment for subscription {subscription_id}",
             payment_method_id=payment_method_id,
-            capture=True
+            capture=True,
         )
 
         # Записываем платёж в БД
@@ -97,24 +99,30 @@ def process_autopayment(self, subscription):
             subscription_id=subscription_id,
             payment_id=payment_data["id"],
             status=payment_data["status"],
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
         )
         try:
             db.session.add(payment)
         finally:
             db.session.commit()
 
-        logger.info(f"Autopayment {payment_data['id']} created for subscription {subscription_id}")
+        logger.info(
+            f"Autopayment {payment_data['id']} created for subscription {subscription_id}"
+        )
 
         # Проверяем статус
         if payment_data["status"] == "succeeded":
             logger.info(f"Payment {payment_data['id']} succeeded")
         else:
-            logger.warning(f"Payment {payment_data['id']} is in status {payment_data['status']}")
+            logger.warning(
+                f"Payment {payment_data['id']} is in status {payment_data['status']}"
+            )
             self.retry()
 
     except Exception as e:
-        logger.error(f"Error processing autopayment for subscription {subscription_id}: {e}")
+        logger.error(
+            f"Error processing autopayment for subscription {subscription_id}: {e}"
+        )
         self.retry(exc=e)
 
 
@@ -129,7 +137,9 @@ def schedule_autopayments():
 
     logger.info(f"Scheduled {len(subscriptions)} autopayments")
 
+
 # Задачи для отладки -=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=--=-=-==-=-=-=--==-=-=-==-=-=-=-=-=-=-=-=-=-=--==-=-
+
 
 @celery.task
 def task_a():
@@ -137,6 +147,7 @@ def task_a():
     # Ставим Task B в очередь с задержкой 2 секунды
     task_b.apply_async(countdown=2)
     return "Task A: Successfully queued Task B"
+
 
 @celery.task
 def task_b():

@@ -74,15 +74,14 @@ class RoleService(RoleRepository):
             await self.session.rollback()
             return False
 
-    async def delete_role_from_user(self, user_id: uuid.UUID, role_id: uuid.UUID) -> bool:
+    async def delete_role_from_user(
+        self, user_id: uuid.UUID, role_id: uuid.UUID
+    ) -> bool:
         try:
 
             # Находим запись о роли пользователя
             stmt = select(UserRole).where(
-                and_(
-                    UserRole.user_id == user_id,
-                    UserRole.role_id == role_id
-                )
+                and_(UserRole.user_id == user_id, UserRole.role_id == role_id)
             )
             result = await self.session.execute(stmt)
             user_role = result.scalar_one_or_none()
@@ -141,7 +140,7 @@ class RoleService(RoleRepository):
                     "id": str(user.id),
                     "username": user.username,
                     "email": user.email,
-                    "is_active": user.is_active
+                    "is_active": user.is_active,
                 }
                 for user in users
             ]
@@ -172,7 +171,7 @@ class RoleService(RoleRepository):
                     and_(
                         UserRole.user_id == user_id,
                         Role.is_deleted == False,
-                        Role.is_active == True
+                        Role.is_active == True,
                     )
                 )
                 .order_by(Role.name)
@@ -186,4 +185,3 @@ class RoleService(RoleRepository):
         except Exception as e:
             logger.error(f"Error getting user roles: {str(e)}")
             return []
-

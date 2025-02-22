@@ -8,7 +8,7 @@ class AmountSchema(BaseModel):
     currency: str
 
 
-class YooKassaPaymentSchema(BaseModel, extra='allow'):
+class YooKassaPaymentSchema(BaseModel, extra="allow"):
     id: str
     status: str
     amount: AmountSchema

@@ -4,7 +4,7 @@ from notificator.notificator import Notificator
 import config
 from logger import logger
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     message_processor = EmaiMessageProcessor(
         logger=logger,
         mailer_host=config.mailer_host,
@@ -14,9 +14,9 @@ if __name__ == '__main__':
         sender_email=config.mailer_from_email,
         dsl=config.dsl_for_notifications,
         message_table_name=config.notifications_table_name,
-        templates_dir='templates',
-        template_name='welcome.html',
-        subject='Welcome to out perfect theater'
+        templates_dir="templates",
+        template_name="welcome.html",
+        subject="Welcome to out perfect theater",
     )
 
     notificator = Notificator(

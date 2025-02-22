@@ -1,12 +1,12 @@
 import multiprocessing
 
-wsgi_app = 'main:app'
+wsgi_app = "main:app"
 
-bind = '0.0.0.0:8000'
+bind = "0.0.0.0:8000"
 
 workers = multiprocessing.cpu_count() * 2 + 1
 
-worker_class = 'uvicorn.workers.UvicornWorker'
+worker_class = "uvicorn.workers.UvicornWorker"
 
 threads = 2
 
@@ -14,10 +14,10 @@ timeout = 120
 
 reload = False
 
-loglevel = 'info'
+loglevel = "info"
 
-forwarded_allow_ips = '*'
-secure_scheme_headers = {'X-Forwarded-Proto': 'https'}
+forwarded_allow_ips = "*"
+secure_scheme_headers = {"X-Forwarded-Proto": "https"}
 
 preload_app = True
 

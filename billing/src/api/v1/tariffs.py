@@ -15,9 +15,9 @@ router = APIRouter()
     summary="Получить активные тарифы",
     response_description="Активные тарифы",
     response_model=list[TariffSchema],
-    status_code=HTTPStatus.OK
+    status_code=HTTPStatus.OK,
 )
 async def get_tariffs(
-        tariff_service: TariffService = Depends(get_tariff_service)
+    tariff_service: TariffService = Depends(get_tariff_service),
 ) -> list[TariffSchema]:
     return await tariff_service.get_active_tariffs()

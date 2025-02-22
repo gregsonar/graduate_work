@@ -5,20 +5,19 @@ from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 class Notificator:
     def __init__(
-            self,
-            rabbit_host: str,
-            rabbit_user: str,
-            rabbit_pass: str,
-            queue_name: str,
-            processor: Callable,
+        self,
+        rabbit_host: str,
+        rabbit_user: str,
+        rabbit_pass: str,
+        queue_name: str,
+        processor: Callable,
     ) -> None:
         self.rabbit_user = rabbit_user
         self.rabbit_pass = rabbit_pass

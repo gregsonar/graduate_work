@@ -17,15 +17,15 @@ class AuthTokenMiddleware:
                 self._validate_or_refresh_tokens(request)
             except AuthServiceError:
                 logout(request)
-                return redirect(reverse('admin:login'))
+                return redirect(reverse("admin:login"))
 
         response = self.get_response(request)
         return response
 
     def _validate_or_refresh_tokens(self, request):
         """Проверка и обновление токенов"""
-        access_token = request.session.get('access_token')
-        refresh_token = request.session.get('refresh_token')
+        access_token = request.session.get("access_token")
+        refresh_token = request.session.get("refresh_token")
 
         if not access_token or not refresh_token:
             raise AuthServiceError("No tokens found")
@@ -33,21 +33,20 @@ class AuthTokenMiddleware:
         try:
             # Проверяем валидность access token
             response = requests.get(
-                f"{settings.AUTH_SERVICE_URL}/auth/me",
-                params={'token': access_token}
+                f"{settings.AUTH_SERVICE_URL}/auth/me", params={"token": access_token}
             )
 
             if response.status_code != 200:
                 # Пробуем обновить токены
                 refresh_response = requests.post(
                     f"{settings.AUTH_SERVICE_URL}/auth/refresh",
-                    params={'refresh_token': refresh_token}
+                    params={"refresh_token": refresh_token},
                 )
 
                 if refresh_response.status_code == 200:
                     tokens = refresh_response.json()
-                    request.session['access_token'] = tokens['access_token']
-                    request.session['refresh_token'] = tokens['refresh_token']
+                    request.session["access_token"] = tokens["access_token"]
+                    request.session["refresh_token"] = tokens["refresh_token"]
                 else:
                     raise AuthServiceError("Failed to refresh tokens")
 

@@ -13,7 +13,9 @@ class RequestLimit:
         self.redis_client = redis_client
         self.prefix = prefix
 
-    async def is_rate_limit(self, key: str, max_requests: int, window: int) -> tuple[bool, int]:
+    async def is_rate_limit(
+        self, key: str, max_requests: int, window: int
+    ) -> tuple[bool, int]:
         current_time = int(time.time())
 
         window_key = f"{self.prefix}:{key}:{current_time // window}"

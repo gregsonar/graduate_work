@@ -11,30 +11,32 @@ class Setting(BaseSettings):
 
     celery_broker_url: str = "redis://redis_billing:6380/0"
 
-    yookassa_token: str = Field(default='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM')
-    yookassa_shopid: str = Field(default='1023840')
+    yookassa_token: str = Field(
+        default="test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM"
+    )
+    yookassa_shopid: str = Field(default="1023840")
 
     check_delay_in_seconds: int = 5
 
     # Используем декоратор Field для явного указания,
     # что это поле должно быть разрешено
     base_url: str = Field(
-        default='http://0.0.0.0/api/subscriptions/api/v1/subscription/'
+        default="http://0.0.0.0/api/subscriptions/api/v1/subscription/"
     )
 
     @property
     def dsn(self) -> str:
         return (
-            f'postgresql+asyncpg://'
-            f'{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/'
-            f'{self.db_name}'
+            f"postgresql+asyncpg://"
+            f"{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/"
+            f"{self.db_name}"
         )
 
     @property
     def dsn_sync(self) -> str:
         return (
-            f'postgresql://{self.db_user}:{self.db_password}@{self.db_host}'
-            f':{self.db_port}/{self.db_name}'
+            f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}"
+            f":{self.db_port}/{self.db_name}"
         )
 
     class Config:

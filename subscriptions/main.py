@@ -20,7 +20,7 @@ app = FastAPI(
 
 app.swagger_ui_init_oauth = {
     "usePkceWithAuthorizationCodeGrant": True,
-    "persistAuthorization": True
+    "persistAuthorization": True,
 }
 
 app.openapi_components = {
@@ -30,7 +30,7 @@ app.openapi_components = {
             "scheme": "bearer",
             "bearerFormat": "JWT",
             "description": "Введите ваш JWT токен в формате: **Bearer &lt;token&gt;**\n\n"
-                         "Например: Bearer eyJhbGciOiJIUzI1NiIs..."
+            "Например: Bearer eyJhbGciOiJIUzI1NiIs...",
         }
     }
 }
@@ -43,7 +43,7 @@ app.add_middleware(
     allow_origins=settings.ALLOWED_HOSTS,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 
@@ -51,9 +51,11 @@ app.add_middleware(
 async def health_check():
     return {"status": "ok"}
 
-app.include_router(subscription_router.router, prefix='/api/v1/subscription', tags=['subscription'])
+
+app.include_router(
+    subscription_router.router, prefix="/api/v1/subscription", tags=["subscription"]
+)
 
 
-
-if __name__ == '__main__':
-    uvicorn.run("main:app", host='0.0.0.0', port=8001, log_level='info', reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, log_level="info", reload=True)

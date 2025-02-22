@@ -17,6 +17,7 @@ from yookassa import Configuration, Payment
 
 logger = logging.getLogger(__name__)
 
+
 class YooKassaProvider(BasePaymentProvider):
     def __init__(self, account_id: str, secret_key: str):
         Configuration.configure(account_id, secret_key)
@@ -81,7 +82,6 @@ class YooKassaProvider(BasePaymentProvider):
         except Exception as e:
             raise PaymentCreationError(f"Payment creation failed: {str(e)}")
 
-
     def get_payment(self, payment_id: str) -> Dict[str, Any]:
         try:
 
@@ -104,7 +104,6 @@ class YooKassaProvider(BasePaymentProvider):
             return payment_to_cancel
         except Exception as e:
             raise e
-
 
     def capture_payment(
             self,
@@ -136,10 +135,10 @@ class YooKassaProvider(BasePaymentProvider):
 
     def handle_webhook(self, event: str, data: dict):
         handlers = {
-            'payment.succeeded': self._handle_payment_succeeded,
-            'payment.canceled': self._handle_payment_canceled,
-            'payment.waiting_for_capture': self._handle_waiting_capture,
-            'refund.succeeded': self._handle_refund_succeeded
+            "payment.succeeded": self._handle_payment_succeeded,
+            "payment.canceled": self._handle_payment_canceled,
+            "payment.waiting_for_capture": self._handle_waiting_capture,
+            "refund.succeeded": self._handle_refund_succeeded
         }
 
         if handler := handlers.get(event):
@@ -152,20 +151,20 @@ class YooKassaProvider(BasePaymentProvider):
 
     def _handle_payment_succeeded(self, data: dict):
         # Обновляем статус платежа в вашей системе
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'succeeded')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "succeeded")
 
     def _handle_payment_canceled(self, data: dict):
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'canceled')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "canceled")
 
     def _handle_waiting_capture(self, data: dict):
-        payment_id = data['id']
-        self._update_payment_status(payment_id, 'waiting_for_capture')
+        payment_id = data["id"]
+        self._update_payment_status(payment_id, "waiting_for_capture")
 
     def _handle_refund_succeeded(self, data: dict):
-        refund_id = data['id']
-        payment_id = data['payment_id']
+        refund_id = data["id"]
+        payment_id = data["payment_id"]
         self._process_refund(refund_id, payment_id)
 
     def _update_payment_status(self, payment_id: str, status: str):

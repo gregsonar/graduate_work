@@ -10,32 +10,32 @@ from logger import logger
 def process_message(ch, method, properties, message_data) -> None:
     data = json.loads(message_data)
 
-    body: str = data['body']
-    subject: str = data['subject']
-    user_id: str = data['user_id']
+    body: str = data["body"]
+    subject: str = data["subject"]
+    user_id: str = data["user_id"]
 
     # Создаем фиктивный словарь пользователя, так как у нас есть только user_id
-    user = {'id': user_id, 'email': None}
-    
+    user = {"id": user_id, "email": None}
+
     # Получаем email пользователя из базы данных через message_processor
     with message_processor.get_db_connection() as conn, conn.cursor() as cursor:
-        cursor.execute('SELECT email FROM users WHERE id = %s', (user_id,))
+        cursor.execute("SELECT email FROM users WHERE id = %s", (user_id,))
         result = cursor.fetchone()
         if result:
-            user['email'] = result[0]
+            user["email"] = result[0]
 
-    html = message_processor.render_template(template='message.html', body=body)
+    html = message_processor.render_template(template="message.html", body=body)
     sender = config.mailer_from_email
-    email = user.get('email')
-    
+    email = user.get("email")
+
     if email:
         message_processor.send_email(email, sender, subject, html)
         message_processor.save_to_db(user_id=user_id, message=subject)
     else:
-        logger.error(f'Email not found for user {user_id}')
+        logger.error(f"Email not found for user {user_id}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     message_processor = EmaiMessageProcessor(
         logger=logger,
         mailer_host=config.mailer_host,
@@ -45,9 +45,9 @@ if __name__ == '__main__':
         sender_email=config.mailer_from_email,
         dsl=config.dsl_for_notifications,
         message_table_name=config.notifications_table_name,
-        templates_dir='templates',
-        template_name='message.html',
-        subject='Welcome to out perfect theater'
+        templates_dir="templates",
+        template_name="message.html",
+        subject="Welcome to out perfect theater",
     )
 
     notificator = Notificator(

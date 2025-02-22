@@ -68,6 +68,7 @@ async def get_subscription(
     #     )
     return subscription
 
+
 @router.get("/user/{user_id}", response_model=SubscriptionResponse)
 async def get_subscription_with_user_id(
         user_id: UUID,
@@ -123,7 +124,10 @@ async def suspend_subscription(
     #     )
 
     await subscription_service.suspend_subscription(subscription_id, data.reason)
-    return DetailResponse(detail="Subscription suspended successfully", code="SUBSCRIPTION_SUSPENDED")
+    return DetailResponse(
+        detail="Subscription suspended successfully",
+        code="SUBSCRIPTION_SUSPENDED"
+    )
 
 
 @router.post("/{subscription_id}/resume", response_model=DetailResponse)
@@ -144,7 +148,10 @@ async def resume_subscription(
     #     )
 
     await subscription_service.resume_subscription(subscription_id, data.comment)
-    return DetailResponse(detail="Subscription resumed successfully", code="SUBSCRIPTION_RESUMED")
+    return DetailResponse(
+        detail="Subscription resumed successfully",
+        code="SUBSCRIPTION_RESUMED"
+    )
 
 
 @router.post("/{subscription_id}/cancel", response_model=DetailResponse)
@@ -165,7 +172,10 @@ async def cancel_subscription(
     #     )
 
     await subscription_service.cancel_subscription(subscription_id, data.reason, data.immediate)
-    return DetailResponse(detail="Subscription cancelled successfully", code="SUBSCRIPTION_CANCELLED")
+    return DetailResponse(
+        detail="Subscription cancelled successfully",
+        code="SUBSCRIPTION_CANCELLED"
+    )
 
 
 @router.get("/{subscription_id}/history", response_model=list[SubscriptionHistoryResponse])
@@ -207,6 +217,7 @@ async def get_user_subscriptions(
     """Get all subscriptions for a specific user (admin only)"""
     subscription_service = SubscriptionService(session)
     return await subscription_service.get_all_subscription({"user_id": user_id})
+
 
 @router.get("/admin/due", response_model=list[SubscriptionResponse])
 async def get_user_subscriptions(

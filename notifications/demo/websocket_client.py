@@ -23,11 +23,11 @@ async def connect_websocket():
             print(f"Попытка подключения к {WEBSOCKET_URL}")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 print("Соединение установлено")
-                
+
                 # Отправляем ID пользователя для аутентификации
                 print(f"Отправляем ID пользователя: {USER_ID}")
                 await websocket.send(USER_ID)
-                
+
                 # Получаем подтверждение подключения
                 response = await websocket.recv()
                 if response == "OK":
@@ -37,7 +37,7 @@ async def connect_websocket():
                     return
 
                 print("\nОжидаем сообщения... (Для выхода нажмите Ctrl+C)\n")
-                
+
                 while True:
                     try:
                         message = await websocket.recv()
@@ -46,7 +46,7 @@ async def connect_websocket():
                     except websockets.ConnectionClosed:
                         print("Соединение с сервером разорвано")
                         break
-                    
+
         except websockets.ConnectionClosed:
             print(f"Не удалось подключиться к {WEBSOCKET_URL}")
             print("Убедитесь, что сервер запущен и доступен")
@@ -66,4 +66,4 @@ if __name__ == "__main__":
         asyncio.run(connect_websocket())
     except KeyboardInterrupt:
         print("\nПрограмма завершена пользователем")
-        sys.exit(0) 
+        sys.exit(0)

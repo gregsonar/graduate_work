@@ -17,6 +17,7 @@ def get_redis() -> Redis:
         return Redis(**DSN)
     return redis
 
+
 # @asynccontextmanager
 # async def get_redis() -> Redis:
 #     """Контекстный менеджер для Redis клиента."""

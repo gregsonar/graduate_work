@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
     """Модель определяющая платеж."""
 
-    __tablename__ = 'payment'
+    __tablename__ = "payment"
 
     user_id = Column(UUID, nullable=False)
     tariff_id = Column(
@@ -23,9 +23,11 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
     method_id = Column(UUID, nullable=True)
 
     def __repr__(self):
-        return f'<PaymentModel {self.id}>'
+        return f"<PaymentModel {self.id}>"
 
-    def __init__(self, user_id, tariff_id, status, payment_id, subscription_id, **kwargs):
+    def __init__(
+        self, user_id, tariff_id, status, payment_id, subscription_id, **kwargs
+    ):
         super().__init__(**kwargs)
         self.user_id = user_id
         self.tariff_id = tariff_id
@@ -37,13 +39,11 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
             self.method_id = kwargs.get('method_id', False) # https://roman.pt/posts/sqlalchemy-and-alembic/
 
 
-
-
 class PaymentStatus(Enum):
-    SUCCEEDED = 'succeeded'
-    PENDING = 'pending'
-    CANCELED = 'canceled'
-    WAITING_FOR_CAPTURE = 'waiting_for_capture'
+    SUCCEEDED = "succeeded"
+    PENDING = "pending"
+    CANCELED = "canceled"
+    WAITING_FOR_CAPTURE = "waiting_for_capture"
 
     def __repr__(self):
         return self.value

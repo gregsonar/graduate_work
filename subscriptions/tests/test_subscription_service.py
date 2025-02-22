@@ -8,7 +8,7 @@ from subscriptions.models.subscription import SubscriptionStatus, SubscriptionPl
 from subscriptions.schemas.subscription_schema import SubscriptionCreate
 from subscriptions.core.exceptions import (
     SubscriptionNotFoundException,
-    InvalidStatusTransitionException
+    InvalidStatusTransitionException,
 )
 
 
@@ -22,7 +22,7 @@ class TestSubscriptionService:
             start_date=datetime.now(UTC),
             end_date=datetime.now(UTC) + timedelta(days=30),
             price=9.99,
-            is_auto_renewable=True
+            is_auto_renewable=True,
         )
 
         result = await service.create_subscription(subscription_data)
@@ -54,9 +54,7 @@ class TestSubscriptionService:
         service = SubscriptionService(db_session)
 
         await service.cancel_subscription(
-            active_subscription.id,
-            "User requested",
-            immediate=True
+            active_subscription.id, "User requested", immediate=True
         )
 
         updated = await service.get_subscription(active_subscription.id)

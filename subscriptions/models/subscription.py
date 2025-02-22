@@ -42,6 +42,9 @@ class Subscription(Base):
     # plan = relationship("SubscriptionPlan", back_populates="subscriptions")
     history = relationship("SubscriptionHistory", back_populates="subscription", cascade="all, delete-orphan")
     user_subscriptions = relationship("UserSubscription", back_populates="subscription")
+    # данные для платежей
+    payment_id = Column(UUID(as_uuid=True), nullable=True)
+    payment_method_id = Column(UUID(as_uuid=True), nullable=True)
 
 class SubscriptionHistory(Base):
     __tablename__ = 'subscription_history'

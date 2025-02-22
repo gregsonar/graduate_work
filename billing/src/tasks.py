@@ -27,7 +27,6 @@ provider = YooKassaProvider(
     secret_key='test_xB8klULgAEuzogIqiJmKvdKLI5-9SOOTBxFYI6zOjZM',
 )
 
-
 class SubscriptionManager:
     def __init__(self, base_url: str):
         self.base_url = base_url
@@ -185,7 +184,7 @@ class SubscriptionManager:
 
 
 class AutoPaymentManager:
-    def __init__(self, payment_provider, session_factory):
+    def __init__(self, payment_provider: YooKassaProvider, session_factory):
         self.provider = payment_provider
         self.session_factory = session_factory
 
@@ -262,11 +261,17 @@ class AutoPaymentManager:
     def _create_payment(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
         """Create a payment through the payment provider."""
         logger.info(f"Creating payment for subscription: {subscription['id']}")
-        payment_data = self.provider.make_recurrent_payment(
+        payment_data = self.provider.create_payment(
             amount=subscription["price"],
             currency="RUB",
-            description=f"Autopayment for subscription {subscription['id']}"
+            description=f"Autopayment for subscription {subscription['id']}",
+            save_payment_method=True
         )
+        # payment_data = self.provider.make_recurrent_payment(
+        #     amount=subscription["price"],
+        #     currency="RUB",
+        #     description=f"Autopayment for subscription {subscription['id']}"
+        # )
         logger.info(f"Payment created in YooKassa: {payment_data.get('id')}")
         return payment_data
 
@@ -282,6 +287,7 @@ class AutoPaymentManager:
             status=payment_data["status"],
             payment_id=payment_data["id"],
             subscription_id=subscription["id"],
+            method_id=payment_data["payment_method"]["id"]
         )
 
         with self.session_factory() as session:
@@ -453,3 +459,52 @@ def setup_periodic_tasks(sender, **kwargs):
        crontab(minute='*/1'),
        schedule_autopayments.s(),
    )
+
+
+@celery.task(bind=True, max_retries=5)
+def check_payment_status(payment_id: str, subscription_id: str):
+    """
+    Проверяет статус платежа и обрабатывает его соответственно.
+
+    Args:
+        payment_id: ID платежа в системе
+        subscription_id: ID подписки пользователя
+    """
+    try:
+        session = get_sync_session()
+        billing_service = BillingService(session)
+
+        # Получаем текущий статус платежа
+        payment_status = billing_service.get_payment_status(payment_id)
+
+        if payment_status == PaymentStatus.WAITING_FOR_CAPTURE.value:
+            # Захватываем платеж
+            try:
+                billing_service.capture_payment(payment_id)
+                # Обновляем дату окончания подписки
+                billing_service.update_subscription_end_date(subscription_id)
+                logger.info(f"Payment {payment_id} captured successfully")
+
+            except Exception as e:
+                logger.error(f"Failed to capture payment {payment_id}: {str(e)}")
+                raise
+
+        elif payment_status == PaymentStatus.SUCCEEDED.value:
+            logger.info(f"Payment {payment_id} already succeeded")
+
+        elif payment_status == PaymentStatus.CANCELED.value:
+            logger.warning(f"Payment {payment_id} was canceled")
+            # Можно добавить логику для уведомления пользователя
+            return
+
+        elif payment_status == PaymentStatus.PENDING.value:
+            # Если платёж всё ещё в ожидании, перезапускаем задачу
+            retry_in = min(2 ** self.request.retries, 32)  # Экспоненциальная задержка
+            raise self.retry(countdown=retry_in)
+
+    except Exception as e:
+        logger.error(f"Error processing payment {payment_id}: {str(e)}")
+        if self.request.retries < self.max_retries:
+            retry_in = min(2 ** self.request.retries, 32)
+            raise self.retry(exc=e, countdown=retry_in)
+        raise

@@ -215,3 +215,17 @@ async def get_user_subscriptions(
     """Get all subscriptions with today's payment date (admin only)"""
     subscription_service = SubscriptionService(session)
     return await subscription_service.get_all_subscription({"end_date": datetime.date.today()})
+
+@router.get("/{subscription_id}/pay", response_model=SubscriptionResponse)
+async def pay_for_subscription(
+        subscription_id: UUID,
+        # current_user=Depends(get_current_user),
+        session: AsyncSession = Depends(get_session)
+):
+    """Create a payment for the subscription with given id"""
+    subscription_service = SubscriptionService(session)
+
+    subscription = await subscription_service.get_subscription(subscription_id)
+
+    # вызов создания платежа с сохранением метода оплаты
+    return {'ok': True} # await subscription_service.get_all_subscription({"end_date": datetime.date.today()})

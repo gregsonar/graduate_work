@@ -33,6 +33,9 @@ class PaymentModel(Base, UUIDMixin, TimeStampedMixin):
         self.payment_id = payment_id
         self.subscription_id = subscription_id
 
+        if 'method_id' in kwargs.keys():
+            self.method_id = kwargs.get('method_id', False) # https://roman.pt/posts/sqlalchemy-and-alembic/
+
 
 
 

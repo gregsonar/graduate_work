@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+
 class AmountSchema(BaseModel):
     value: str
     currency: str

@@ -1,6 +1,11 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from typing import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import declarative_base
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/payments_db")

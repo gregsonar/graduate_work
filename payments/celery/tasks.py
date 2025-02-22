@@ -2,16 +2,17 @@
 # Ретраи при неудачном списании.
 # Логика обработки очереди.
 
-import aiohttp
 import asyncio
-from datetime import datetime, UTC
-from celery import Celery
-from payments.providers.yookassa_provider import YooKassaProvider
-from payments.models.payment_jobs import PaymentJob
-from payments import db
 import logging
 import os
+from datetime import UTC, datetime
+
+import aiohttp
+from celery import Celery
 from dotenv import load_dotenv
+from payments import db
+from payments.models.payment_jobs import PaymentJob
+from payments.providers.yookassa_provider import YooKassaProvider
 
 # todo: Замечание: в этих задачах используется асинхронный запрос для получения подписок, а обработка платежей
 # с записью в БД — выполняется синхронно (с вызовом db.session.add(payment) и т. д.).

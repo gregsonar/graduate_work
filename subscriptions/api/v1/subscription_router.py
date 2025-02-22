@@ -1,24 +1,24 @@
-import logging
 import datetime
+import logging
 from uuid import UUID
+
+import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from subscriptions.api.dependencies import get_current_user, get_admin_user
-from subscriptions.db.postgres import get_session
-from subscriptions.services.subscription_service import SubscriptionService
-from subscriptions.schemas.subscription_schema import (
-    SubscriptionCreate,
-    SubscriptionResponse,
-    SubscriptionUpdate,
-    SubscriptionSuspend,
-    SubscriptionResume,
-    SubscriptionCancel,
-    SubscriptionHistoryResponse,
-    DetailResponse
-)
+from subscriptions.api.dependencies import get_admin_user, get_current_user
 from subscriptions.core.config import settings
-import aiohttp
+from subscriptions.db.postgres import get_session
+from subscriptions.schemas.subscription_schema import (
+    DetailResponse,
+    SubscriptionCancel,
+    SubscriptionCreate,
+    SubscriptionHistoryResponse,
+    SubscriptionResponse,
+    SubscriptionResume,
+    SubscriptionSuspend,
+    SubscriptionUpdate,
+)
+from subscriptions.services.subscription_service import SubscriptionService
 
 logger = logging.getLogger(__name__)
 

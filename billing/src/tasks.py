@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, List, Any
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 import httpx
@@ -11,8 +11,8 @@ from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
 from celery import Celery
 from celery.schedules import crontab
-from sqlalchemy.orm import Session
 from payments.providers.yookassa_provider import YooKassaProvider
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

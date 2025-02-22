@@ -1,11 +1,12 @@
 import json
-import uvicorn
-from fastapi import FastAPI, Request, HTTPException
-from yookassa.domain.notification import WebhookNotification
-from yookassa.domain.exceptions import ApiError
-from providers.yookassa_provider import YooKassaProvider
 import os
+
+import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
+from providers.yookassa_provider import YooKassaProvider
+from yookassa.domain.exceptions import ApiError
+from yookassa.domain.notification import WebhookNotification
 
 load_dotenv()
 

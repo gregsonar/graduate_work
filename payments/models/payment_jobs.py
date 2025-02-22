@@ -1,12 +1,12 @@
 # Нужна таблица payment_jobs для отслеживания статусов платежей.
 
 
-from datetime import datetime, UTC
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import Column, DateTime, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
-
-import uuid
 
 Base = declarative_base()
 

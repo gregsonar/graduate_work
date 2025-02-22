@@ -23,6 +23,11 @@ http://localhost/api/openapi
 http://localhost:8080/admin
 ```
 
+Биллинг:
+```
+http://localhost/api/billing/api/openapi
+```
+
 ### Запуск фронтенда
 
 Из директории `front` выполнить команду:

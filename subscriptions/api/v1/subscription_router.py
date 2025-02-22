@@ -18,6 +18,7 @@ from subscriptions.schemas.subscription_schema import (
     DetailResponse
 )
 from subscriptions.core.config import settings
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -227,5 +228,19 @@ async def pay_for_subscription(
 
     subscription = await subscription_service.get_subscription(subscription_id)
 
-    # вызов создания платежа с сохранением метода оплаты
-    return {'ok': True} # await subscription_service.get_all_subscription({"end_date": datetime.date.today()})
+    # Подписываем через billing.src.api.v1.billing.subscribe
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            params = {"tariff_id": subscription.plan_id}
+            async with session.post(url=f"{settings.base_url}billing/subscribe",
+                    data=params,
+                    timeout=30
+            ) as response:
+                if response.status in (200, 201):
+                    return await response.json()
+                logger.error(f"Failed to subscribe, status: {response.status}")
+                return []
+        except Exception as e:
+            logger.error(f"Error during subscription process: {e}")
+            return []

@@ -227,7 +227,7 @@ class AutoPaymentManager:
                 logger.info(f"New payment created with ID: {payment_data.get('id')}")
                 self._save_payment_to_db(payment_data, subscription)
 
-            logger.info(f"Payment data received: {payment_data}")
+            logger.info(f"[process_single_payment] Payment data received: {payment_data}")
 
             if payment_data["status"] == "succeeded":
                 logger.info(f"Payment {payment_data['id']} succeeded")
@@ -244,8 +244,9 @@ class AutoPaymentManager:
                 return payment_data["id"]
 
             elif payment_data["status"] == "pending":
-                logger.info(f"Payment {payment_data['id']} is pending")
-                # raise ValueError("Payment not completed: pending")
+                logger.info(f"Payment {payment_data['id']} is pending")  # вот тут обрывается логика работы с платежом
+                raise ValueError("Payment not completed: pending")
+                # return payment_data["id"]
 
             else:
                 logger.error(f"Payment {payment_data['id']} has unexpected status: {payment_data['status']}")
@@ -281,14 +282,17 @@ class AutoPaymentManager:
             subscription: Dict[str, Any]
     ) -> None:
         """Save payment information to database."""
+
         payment = PaymentModel(
             user_id=subscription["user_id"],
             tariff_id=subscription["plan_id"],
             status=payment_data["status"],
             payment_id=payment_data["id"],
             subscription_id=subscription["id"],
-            method_id=payment_data["payment_method"]["id"]
         )
+        if "payment_method" in payment_data.keys():  # Сохраняем метод оплаты, если он есть (payment_method)
+            method_id = payment_data["payment_method"]["id"]
+            payment.method_id = method_id
 
         with self.session_factory() as session:
             try:
@@ -388,7 +392,7 @@ def process_autopayment(self, subscription: Dict[str, Any], payment_id: Optional
                 else:
                     logger.info("No recent payments found in DB")
         processed_payment_id = payment_manager.process_single_payment(subscription, payment_id)
-        logger.info(f"Payment processed successfully: {processed_payment_id}")
+        logger.info(f"Payment processed successfully. processed_payment_id: {processed_payment_id}")
         return processed_payment_id
 
     except ValueError as e:
@@ -464,6 +468,7 @@ def setup_periodic_tasks(sender, **kwargs):
 @celery.task(bind=True, max_retries=5)
 def check_payment_status(payment_id: str, subscription_id: str):
     """
+    (не используется)
     Проверяет статус платежа и обрабатывает его соответственно.
 
     Args:
@@ -472,18 +477,27 @@ def check_payment_status(payment_id: str, subscription_id: str):
     """
     try:
         session = get_sync_session()
-        billing_service = BillingService(session)
+
+        # billing_service = BillingService(session)
 
         # Получаем текущий статус платежа
-        payment_status = billing_service.get_payment_status(payment_id)
+        payment_status = provider.get_payment(payment_id)
 
         if payment_status == PaymentStatus.WAITING_FOR_CAPTURE.value:
             # Захватываем платеж
             try:
-                billing_service.capture_payment(payment_id)
+                provider.capture_payment(payment_id)
+
                 # Обновляем дату окончания подписки
-                billing_service.update_subscription_end_date(subscription_id)
-                logger.info(f"Payment {payment_id} captured successfully")
+                with SubscriptionManager(settings.base_url) as subscription_manager:
+
+                    subscription_manager.update_subscription(
+                        subscription_data=subscription_manager.get_subscription(subscription_id),
+                    )
+                    # subscript_process(payment, tariff)
+
+                    logger.info(f"Subscription processed for payment {payment_id}")
+                    logger.info(f"Payment {payment_id} captured successfully")
 
             except Exception as e:
                 logger.error(f"Failed to capture payment {payment_id}: {str(e)}")
@@ -499,12 +513,8 @@ def check_payment_status(payment_id: str, subscription_id: str):
 
         elif payment_status == PaymentStatus.PENDING.value:
             # Если платёж всё ещё в ожидании, перезапускаем задачу
-            retry_in = min(2 ** self.request.retries, 32)  # Экспоненциальная задержка
-            raise self.retry(countdown=retry_in)
+            pass
 
     except Exception as e:
         logger.error(f"Error processing payment {payment_id}: {str(e)}")
-        if self.request.retries < self.max_retries:
-            retry_in = min(2 ** self.request.retries, 32)
-            raise self.retry(exc=e, countdown=retry_in)
         raise

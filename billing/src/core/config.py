@@ -23,6 +23,7 @@ class Setting(BaseSettings):
     base_url: str = Field(
         default="http://0.0.0.0/api/subscriptions/api/v1/subscription/"
     )
+    auth_url: str = Field(default="http://auth_api:8000/api/v1/auth/me")
 
     @property
     def dsn(self) -> str:

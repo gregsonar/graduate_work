@@ -5,6 +5,8 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette import status
 
+from billing.src.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 oauth2_scheme = HTTPBearer(scheme_name="Bearer", description="JWT token authentication")
@@ -18,14 +20,14 @@ async def get_current_user(
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
-                "http://auth_api:8000/api/v1/auth/me",
+                settings.auth_url,
                 headers={"Authorization": authorization},
             )
 
             logger.info(f"Auth service response status: {response.status_code}")
             logger.info(f"Auth service response body: {response.text}")
 
-            if response.status_code == 401:
+            if response.status_code == status.HTTP_401_UNAUTHORIZED:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid authentication credentials",

@@ -7,7 +7,6 @@ from billing.src.core.exceptions import TariffNotFoundError
 from billing.src.db.postgres import get_session
 from billing.src.models.payments import PaymentModel
 
-# from billing.src.models.refunds import RefundModel
 from billing.src.models.tariffs import TariffModel
 from billing.src.schemas.payment_schemas import CreatedPaymentSchema
 from billing.src.schemas.tariff_schemas import PaymentSchema
@@ -45,21 +44,6 @@ class BillingService:
         self.db_session.add(new_db_payment)
         await self.db_session.commit()
         return new_db_payment
-
-    # async def save_refund_in_bd(
-    #         self,
-    #         refund: YooKassaProvider.create_refund,
-    # ) -> None:
-    #     """Метод для сохранения возврата в базе."""
-    #     # В нашем модуле юкассы метод отсутствует.
-    #     refund_db = RefundModel(
-    #         payment_id=refund.payment_id,
-    #         refund_id=refund.id,
-    #         status=refund.status,
-    #         amount=refund.amount.value
-    #     )
-    #     self.db_session.add(refund_db)
-    #     await self.db_session.commit()
 
     async def get_all_payments(self, user_id) -> list[PaymentSchema]:
         """Метод для получения из БД всех платежей пользователя."""

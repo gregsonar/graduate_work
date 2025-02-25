@@ -29,7 +29,6 @@ async def subscribe(
     user_data=Depends(get_current_user),
     payment_service: BillingService = Depends(get_billing_service),
 ) -> CreatedPaymentSchema:
-    print("user_data:", user_data)
     return await payment_service.create_payment(
         user_data.get("id"),
         payment_data.tariff_id,

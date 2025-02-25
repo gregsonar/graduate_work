@@ -36,7 +36,6 @@ class BillingService:
         payment: Dict[str, str],
     ) -> PaymentModel:
         """Метод для сохранения платежа в базе."""
-        print(user_id)
         new_db_payment = PaymentModel(
             user_id=user_id,
             tariff_id=tariff,

@@ -27,7 +27,7 @@ async def get_current_user(
             logger.info(f"Auth service response status: {response.status_code}")
             logger.info(f"Auth service response body: {response.text}")
 
-            if response.status_code == 401:
+            if response.status_code == status.HTTP_401_UNAUTHORIZED:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid authentication credentials",

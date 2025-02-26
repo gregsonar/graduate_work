@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Column, String, Text, Index
+from sqlalchemy import Column, Index, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 
 from auth.db.postgres import Base
-from .base_models import TimestampMixin, CRUDMixin
+
+from .base_models import CRUDMixin, TimestampMixin
 
 
 class Role(Base, TimestampMixin, CRUDMixin):

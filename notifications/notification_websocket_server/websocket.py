@@ -1,21 +1,19 @@
 import asyncio
 import os
 import uuid
+from typing import Dict, Optional
 
 import aio_pika
 import asyncpg
-from typing import Dict, Optional
 import websockets
-
-from settings.extensions import logger
 from settings.config import (
-    RABBIT_HOST,
-    RABBIT_USER,
-    RABBIT_PASS,
-    RABBIT_USER_INSTANT_MESSAGE_QUEUE,
     MESSAGES_DSL,
+    RABBIT_HOST,
+    RABBIT_PASS,
+    RABBIT_USER,
+    RABBIT_USER_INSTANT_MESSAGE_QUEUE
 )
-
+from settings.extensions import logger
 
 USERS: Dict[uuid.UUID, websockets.WebSocketServerProtocol] = {}
 

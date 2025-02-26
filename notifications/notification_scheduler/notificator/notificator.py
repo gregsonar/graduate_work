@@ -1,6 +1,6 @@
-import pika
-
 from typing import Callable
+
+import pika
 
 
 class Notificator:

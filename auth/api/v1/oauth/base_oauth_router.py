@@ -1,20 +1,28 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any, Type
-from fastapi import APIRouter, Depends, Request, HTTPException, status, Response
+from typing import Any, Dict, Type
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status
+)
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.core.decorators import validate_roles
 from auth.db.postgres import get_session
 from auth.db.redis_db import get_redis
-from auth.services.auth_service import AuthService
-from auth.services.oauth.base_oauth import BaseOAuthService
-from auth.core.decorators import validate_roles
 from auth.schemas.auth_schema import TokenResponse
 from auth.schemas.oauth.base_schema import (
-    SocialAccountResponse,
-    SocialAccountList,
     AuthUrlResponse,
+    SocialAccountList,
+    SocialAccountResponse
 )
+from auth.services.auth_service import AuthService
+from auth.services.oauth.base_oauth import BaseOAuthService
 from auth.services.oauth.vk_oauth_service import VKOAuthService
 from auth.services.oauth.ya_oauth_service import YandexOAuthService
 

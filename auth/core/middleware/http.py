@@ -1,6 +1,8 @@
 from typing import Callable
+
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import ORJSONResponse
+
 from .request_limit import RequestLimit
 from .tracker import RequestTracker
 

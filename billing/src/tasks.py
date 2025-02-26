@@ -5,14 +5,15 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 import httpx
+from celery import Celery
+from celery.schedules import crontab
+from sqlalchemy.orm import Session
+
 from billing.src.core.config import settings
 from billing.src.db.postgres import get_sync_session
 from billing.src.models.payments import PaymentModel, PaymentStatus
 from billing.src.models.tariffs import TariffModel
-from celery import Celery
-from celery.schedules import crontab
 from payments.providers.yookassa_provider import YooKassaProvider
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 

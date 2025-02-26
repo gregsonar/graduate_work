@@ -1,16 +1,16 @@
 # auth/db/crud.py
-from uuid import UUID
 from datetime import datetime
-from typing import Type, TypeVar, Generic, Optional, List, Dict, Any
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from uuid import UUID
 
-from sqlalchemy import select, update, delete, and_, func
+from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, Mapped
+from sqlalchemy.orm import Mapped, selectinload
 
-from auth.models.base_models import SocialProvider
-from auth.models.user import User
-from auth.models.role import Role
 from auth.models.access_log import AccessLog
+from auth.models.base_models import SocialProvider
+from auth.models.role import Role
+from auth.models.user import User
 from auth.models.user_account import UserSocialAccount
 from auth.models.user_role import UserRole
 

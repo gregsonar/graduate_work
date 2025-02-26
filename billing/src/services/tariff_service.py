@@ -1,9 +1,10 @@
-from billing.src.db.postgres import get_session
-from billing.src.models.tariffs import TariffModel
-from billing.src.schemas.tariff_schemas import TariffSchema
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from billing.src.db.postgres import get_session
+from billing.src.models.tariffs import TariffModel
+from billing.src.schemas.tariff_schemas import TariffSchema
 
 
 class TariffService:

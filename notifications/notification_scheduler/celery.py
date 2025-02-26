@@ -1,7 +1,6 @@
 from celery import Celery
-
-from notification_scheduler.tasks.tasks_generator import add_all_tasks
 from notification_scheduler.tasks.message_generator import generate_messages
+from notification_scheduler.tasks.tasks_generator import add_all_tasks
 
 app = Celery(
     "notification_scheduler",

@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, Index, ForeignKey
+from sqlalchemy import Column, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped
 
 from auth.db.postgres import Base
+
 from .base_models import TimestampMixin
 
 

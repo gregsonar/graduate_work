@@ -1,25 +1,23 @@
+import asyncio
 import os
 import sys
 from logging.config import fileConfig
-import asyncio
 
+from alembic import context
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
+from subscriptions.core.config import settings as cf
 from subscriptions.models import (
     Subscription,
     SubscriptionHistory,
     SubscriptionPlan,
     UserSubscription,
-    UserSubscriptionHistory,
+    UserSubscriptionHistory
 )
-
 from subscriptions.models.base_models import Base
-
-from subscriptions.core.config import settings as cf
 
 config = context.config
 

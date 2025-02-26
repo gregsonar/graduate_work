@@ -1,8 +1,7 @@
-from notificator.email_processor import EmaiMessageProcessor
-from notificator.notificator import Notificator
-
 import config
 from logger import logger
+from notificator.email_processor import EmaiMessageProcessor
+from notificator.notificator import Notificator
 
 if __name__ == "__main__":
     message_processor = EmaiMessageProcessor(

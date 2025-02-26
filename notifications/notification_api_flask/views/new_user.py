@@ -2,7 +2,6 @@ from http.client import BAD_REQUEST
 
 from flask import request
 from flask.views import MethodView
-
 from services.rabbit_mq import send_user_created_event
 from services.serialization_schemas import UserSchema
 from services.user_created_schema import UserCreatedSchema

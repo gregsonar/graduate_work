@@ -1,8 +1,7 @@
-import logstash
+import logging
 import os
 
-import logging
-
+import logstash
 
 logger = logging.getLogger("Auth app logger")
 logger.setLevel(logging.INFO)

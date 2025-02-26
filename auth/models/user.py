@@ -1,18 +1,20 @@
 from __future__ import annotations
+
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, String, Index
+from sqlalchemy import Boolean, Column, Index, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from auth.db.postgres import Base
-from .base_models import TimestampMixin, SocialProvider
+
+from .access_log import AccessLog
+from .base_models import SocialProvider, TimestampMixin
+from .role import Role
 from .user_account import UserSocialAccount
 from .user_role import UserRole
-from .role import Role
-from .access_log import AccessLog
 
 
 class User(Base, TimestampMixin):

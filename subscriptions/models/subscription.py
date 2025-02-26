@@ -1,16 +1,9 @@
 from enum import Enum
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Boolean,
-    Numeric,
-    String,
-    Enum as SQLEnum,
-    DateTime,
-    Integer,
-    TIMESTAMP,
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import TIMESTAMP, Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from subscriptions.models.base_models import Base

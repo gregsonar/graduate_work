@@ -1,16 +1,17 @@
 from typing import List, Optional
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from subscriptions.schemas.subscription_schema import (
     SubscriptionCreate,
-    SubscriptionUpdate,
-    SubscriptionResponse,
     SubscriptionHistoryResponse,
+    SubscriptionResponse,
+    SubscriptionUpdate
 )
+from subscriptions.services.history_manager import SubscriptionHistoryManager
 from subscriptions.services.repository import SubscriptionRepository
 from subscriptions.services.status_manager import SubscriptionStatusManager
-from subscriptions.services.history_manager import SubscriptionHistoryManager
 
 
 class SubscriptionService:

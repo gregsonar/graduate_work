@@ -6,14 +6,15 @@ from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 import requests
+from yookassa import Configuration, Payment
+
 from payments.exceptions import (
     PaymentCaptureError,
     PaymentCreationError,
-    PaymentStatusError,
+    PaymentStatusError
 )
 from payments.providers.base import BasePaymentProvider
 from payments.schemas import YooKassaPaymentSchema, YooKassaRefundSchema
-from yookassa import Configuration, Payment
 
 logger = logging.getLogger(__name__)
 

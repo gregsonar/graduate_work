@@ -1,8 +1,10 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, UTC
-from subscriptions.services.validator import SubscriptionValidator
-from subscriptions.models.subscription import SubscriptionStatus
+
 from subscriptions.core.exceptions import InvalidStatusTransitionException
+from subscriptions.models.subscription import SubscriptionStatus
+from subscriptions.services.validator import SubscriptionValidator
 
 
 class TestSubscriptionValidator:

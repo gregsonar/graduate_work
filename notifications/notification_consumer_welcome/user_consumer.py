@@ -1,12 +1,13 @@
-from notificator.email_processor import EmaiMessageProcessor
-from notificator.notificator import Notificator
 import json
 from typing import Dict
+
 import config
 from logger import logger
+from models import User
+from notificator.email_processor import EmaiMessageProcessor
+from notificator.notificator import Notificator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import User
 
 
 class UserConsumer:

@@ -1,18 +1,17 @@
 import json
 
 import pika
-
+from services.serialization_schemas import Message, MessageSchema, MessageType
 from settings.config import (
     RABBIT_HOST,
-    RABBIT_USER,
-    RABBIT_PASS,
-    RABBIT_USER_CREATED_QUEUE,
-    RABBIT_INSTANT_MESSAGE_TO_ALL_QUEUE,
     RABBIT_INSTANT_MESSAGE_EMAIL,
+    RABBIT_INSTANT_MESSAGE_TO_ALL_QUEUE,
     RABBIT_INSTANT_MESSAGE_WEB_SOCKET,
+    RABBIT_PASS,
+    RABBIT_USER,
+    RABBIT_USER_CREATED_QUEUE
 )
 from settings.extensions import logger
-from services.serialization_schemas import Message, MessageType, MessageSchema
 
 
 def send_to_queue(queue_name: str, message: bytes) -> None:

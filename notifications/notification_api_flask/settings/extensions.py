@@ -1,12 +1,10 @@
-import logstash
+import logging
 import os
 
-import logging
-
+import logstash
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
-
 
 naming_convention = {
     "ix": "ix_%(column_0_label)s",

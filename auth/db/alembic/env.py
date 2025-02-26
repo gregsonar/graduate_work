@@ -1,21 +1,21 @@
+import asyncio
 import os
 import sys
 from logging.config import fileConfig
-import asyncio
 
-from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from dotenv import load_dotenv
+from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from auth.core.config import config as cf
-from auth.models.user import User
-from auth.models.role import Role
-from auth.models.user_role import UserRole
 from auth.models.access_log import AccessLog
+from auth.models.role import Role
+from auth.models.user import User
 from auth.models.user_account import UserSocialAccount
+from auth.models.user_role import UserRole
 
 load_dotenv()
 

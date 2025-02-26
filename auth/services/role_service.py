@@ -1,10 +1,10 @@
 import logging
 import uuid
-from typing import Type, Dict, Any, List
+from typing import Any, Dict, List, Type
 
 from fastapi import Depends
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
 from auth.db.postgres import get_session

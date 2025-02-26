@@ -1,9 +1,8 @@
 from functools import wraps
 
 import psycopg2
-from psycopg2.extras import DictCursor
-
 from config import dsl_for_users_data
+from psycopg2.extras import DictCursor
 
 
 def psycopg2_cursor_fetch_users(func):

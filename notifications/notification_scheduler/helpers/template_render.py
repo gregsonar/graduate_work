@@ -1,6 +1,6 @@
 from typing import Callable
 
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 from notification_scheduler.helpers.data_getter import TemplateDataGetter, User
 
 

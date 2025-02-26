@@ -1,7 +1,9 @@
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
-from fastapi import FastAPI, Depends
+
+import pytest
+from fastapi import Depends, FastAPI
+from httpx import AsyncClient
+
 from auth.services.auth_service import AuthService
 
 

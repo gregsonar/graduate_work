@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 from uuid import UUID
 
 import aiohttp
@@ -10,19 +10,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped
 from starlette import status
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
+from typing_extensions import Optional
 
-from auth.db.crud import AccessLogRepository, UserRepository, SocialAccountRepository
+from auth.core.base_service import circuit_protected
+from auth.core.breaker import AsyncCircuitBreaker
+from auth.core.config import rabbit_config
+from auth.db.crud import (
+    AccessLogRepository,
+    SocialAccountRepository,
+    UserRepository
+)
+from auth.events.user_events import UserCreatedEvent, UserEventProducer
 from auth.models.base_models import SocialProvider
 from auth.models.user import User
 from auth.models.user_account import UserSocialAccount
 from auth.services.token_service import TokenService
 from auth.services.user_service import logger
-from typing_extensions import Optional
-
-from auth.core.breaker import AsyncCircuitBreaker
-from auth.core.base_service import circuit_protected
-from auth.events.user_events import UserEventProducer, UserCreatedEvent
-from auth.core.config import rabbit_config
 
 # Создаем объект для работы с паролями
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -1,21 +1,21 @@
 import uuid
-from datetime import datetime, timedelta, UTC
-from typing import Optional, Dict, Tuple
+from datetime import UTC, datetime, timedelta
+from logging import getLogger
+from typing import Dict, Optional, Tuple
 from uuid import UUID
+
 import jwt
 from fastapi import HTTPException, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from logging import getLogger
-
 from sqlalchemy.orm import Mapped
 
 logger = getLogger(__name__)
 
-from auth.db.crud import UserRepository
-from auth.core.config import TokenConfig
 from auth.core.base_service import circuit_protected
 from auth.core.breaker import AsyncCircuitBreaker
+from auth.core.config import TokenConfig
+from auth.db.crud import UserRepository
 
 
 class BlacklistError(Exception):

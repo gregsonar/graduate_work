@@ -1,9 +1,8 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 
 import logstash
-
 
 logger = logging.getLogger("notification_consumer_welcome_app")
 logger.setLevel(logging.INFO)

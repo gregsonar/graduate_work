@@ -1,19 +1,18 @@
-from http.client import OK, BAD_REQUEST, CONFLICT, CREATED
+from http.client import BAD_REQUEST, CONFLICT, CREATED, OK
 
-from flask import request, jsonify, Response
+from flask import Response, jsonify, request
 from flask.views import MethodView
-from werkzeug.exceptions import HTTPException
-
 from services.rule import (
-    get_all_rules,
-    rule_data,
+    RuleExists,
     RuleNotFound,
     add_message_rule,
-    RuleExists,
     delete_message_rule,
-    update_message_rule,
+    get_all_rules,
+    rule_data,
+    update_message_rule
 )
 from services.serialization_schemas import DumpRuleSchema, LoadRuleSchema, Rule
+from werkzeug.exceptions import HTTPException
 
 
 class RuleAPI(MethodView):

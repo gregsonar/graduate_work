@@ -1,9 +1,10 @@
 import json
-import pika
+import logging
 from dataclasses import dataclass
 from typing import Dict
 from uuid import UUID
-import logging
+
+import pika
 
 from auth.core.config import RabbitMQSettings
 

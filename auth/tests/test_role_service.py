@@ -1,10 +1,11 @@
 # auth/tests/test_role_service.py
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 import uuid
+from unittest.mock import AsyncMock, MagicMock
 
-from auth.services.role_service import RoleService
+import pytest
+
 from auth.models.user_role import UserRole
+from auth.services.role_service import RoleService
 
 pytestmark = pytest.mark.asyncio
 

@@ -1,5 +1,6 @@
 import uuid
 from typing import Tuple
+
 from psycopg2.extras import _connection
 
 

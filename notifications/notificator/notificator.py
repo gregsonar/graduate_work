@@ -1,8 +1,8 @@
 import logging
-import pika
 from typing import Callable
-from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
+import pika
+from pika.exceptions import AMQPChannelError, AMQPConnectionError
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

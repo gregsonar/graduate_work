@@ -1,12 +1,13 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-import jwt
-from datetime import datetime, timedelta, UTC
 import uuid
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import jwt
+import pytest
 from fastapi import HTTPException
 
-from auth.services.token_service import TokenService
 from auth.core.config import TokenConfig
+from auth.services.token_service import TokenService
 
 pytestmark = pytest.mark.asyncio
 

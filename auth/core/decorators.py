@@ -1,7 +1,8 @@
 from functools import wraps
 from typing import Callable, List, Optional
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from auth.db.postgres import get_session
 from auth.db.redis_db import get_redis

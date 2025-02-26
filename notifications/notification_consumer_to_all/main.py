@@ -1,10 +1,9 @@
-from notificator.email_processor import EmaiMessageProcessor
-from notificator.notificator import Notificator
-from psycopg2.extras import DictCursor
-
 import config
 from helpers import psycopg2_cursor_fetch_users
 from logger import logger
+from notificator.email_processor import EmaiMessageProcessor
+from notificator.notificator import Notificator
+from psycopg2.extras import DictCursor
 
 PROCESS_USERS_BATCH_SIZE = 10_000
 

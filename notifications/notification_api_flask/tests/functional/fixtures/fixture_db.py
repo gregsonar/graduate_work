@@ -1,8 +1,7 @@
+from functional.utils.db import clear_test_data
 from psycopg2 import connect
 from psycopg2.extras import _connection
 from pytest import fixture
-
-from functional.utils.db import clear_test_data
 
 
 @fixture

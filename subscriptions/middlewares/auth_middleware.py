@@ -1,10 +1,14 @@
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
-from typing import List, Optional
 from dataclasses import dataclass
-import jwt
 from datetime import datetime
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from typing import List, Optional
+
+import jwt
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    RequestResponseEndpoint
+)
 from starlette.responses import Response
 
 

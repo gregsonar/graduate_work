@@ -1,8 +1,11 @@
+from logging import getLogger
 from uuid import uuid4
+
 from fastapi import Request
 from opentelemetry import trace
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from logging import getLogger
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator
+)
 
 
 class RequestTracker:

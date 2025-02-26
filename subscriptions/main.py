@@ -2,11 +2,12 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+
 from subscriptions.api.v1 import subscription_router
 from subscriptions.core.config import settings
 from subscriptions.middlewares.auth_middleware import (
     AuthConfig,
-    AuthMiddleware,
+    AuthMiddleware
 )
 
 app = FastAPI(

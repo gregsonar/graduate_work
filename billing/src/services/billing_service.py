@@ -2,19 +2,19 @@ from typing import Dict
 from uuid import UUID
 
 import httpx
+from fastapi import Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from billing.src.core.config import settings
 from billing.src.core.exceptions import TariffNotFoundError
 from billing.src.db.postgres import get_session
 from billing.src.models.payments import PaymentModel
-
 from billing.src.models.tariffs import TariffModel
 from billing.src.schemas.payment_schemas import CreatedPaymentSchema
 from billing.src.schemas.tariff_schemas import PaymentSchema
 from billing.src.tasks import subscribe
-from fastapi import Depends, HTTPException, status
 from payments.providers.yookassa_provider import YooKassaProvider
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BillingService:

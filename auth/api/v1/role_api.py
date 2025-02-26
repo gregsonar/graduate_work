@@ -1,14 +1,23 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Path, Body
-from typing import List
 import uuid
-from auth.core.decorators import validate_roles
+from typing import List
 
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    status
+)
+
+from auth.core.decorators import validate_roles
 from auth.schemas.role_schema import (
+    CreateRoleResponse,
     RoleListResponse,
     RoleResponse,
     UpdateRoleRequest,
-    UserRoleAssignment,
-    CreateRoleResponse,
+    UserRoleAssignment
 )
 from auth.services.role_service import RoleService, logger
 

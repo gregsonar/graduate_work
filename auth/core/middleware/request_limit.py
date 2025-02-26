@@ -1,5 +1,5 @@
-from typing import Callable, Optional
 import time
+from typing import Callable, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response, status

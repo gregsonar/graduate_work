@@ -1,8 +1,10 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
-from yookassa.domain.notification import WebhookNotification
 from yookassa.domain.exceptions import ApiError
+from yookassa.domain.notification import WebhookNotification
+
 from payments.webhook_app import app
 
 client = TestClient(app)

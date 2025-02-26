@@ -5,6 +5,7 @@ from uuid import UUID
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from subscriptions.core.config import settings
 from subscriptions.db.postgres import get_session
 from subscriptions.schemas.subscription_schema import (
@@ -15,7 +16,7 @@ from subscriptions.schemas.subscription_schema import (
     SubscriptionResponse,
     SubscriptionResume,
     SubscriptionSuspend,
-    SubscriptionUpdate,
+    SubscriptionUpdate
 )
 from subscriptions.services.subscription_service import SubscriptionService
 

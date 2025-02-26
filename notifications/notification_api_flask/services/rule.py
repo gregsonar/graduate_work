@@ -1,10 +1,11 @@
 from typing import List
 
+from models import Rule as DatabaseRule
+from models import TimeTable as DatabaseTimeTable
+from settings.extensions import db, logger
 from sqlalchemy.orm import Session
 
-from models import TimeTable as DatabaseTimeTable, Rule as DatabaseRule
-from .serialization_schemas import TimeTable, Rule
-from settings.extensions import db, logger
+from .serialization_schemas import Rule, TimeTable
 
 
 class RuleExists(Exception):

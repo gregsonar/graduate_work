@@ -1,11 +1,12 @@
-from models import User, TimeTable, Rule
-from settings.extensions import ma
-from marshmallow import fields
 from dataclasses import dataclass
-import marshmallow_dataclass
-from uuid import UUID
-from typing import Optional
 from enum import Enum
+from typing import Optional
+from uuid import UUID
+
+import marshmallow_dataclass
+from marshmallow import fields
+from models import Rule, TimeTable, User
+from settings.extensions import ma
 
 
 class UserSchema(ma.SQLAlchemySchema):

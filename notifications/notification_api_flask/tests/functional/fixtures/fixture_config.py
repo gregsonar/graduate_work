@@ -1,6 +1,7 @@
-from pytest import fixture
 from dataclasses import dataclass
 from os import getenv
+
+from pytest import fixture
 
 
 @dataclass

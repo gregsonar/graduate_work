@@ -1,8 +1,11 @@
-import requests
 from typing import Optional
+
+import requests
+
+from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
-from django.conf import settings
+
 from .utils import AuthServiceError
 
 

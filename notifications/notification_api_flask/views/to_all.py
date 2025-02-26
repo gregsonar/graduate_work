@@ -2,7 +2,6 @@ from http.client import BAD_REQUEST, CREATED
 
 from flask import request
 from flask.views import MethodView
-
 from services.rabbit_mq import send_instant_message_from_moderator
 
 

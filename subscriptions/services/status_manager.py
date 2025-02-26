@@ -1,9 +1,10 @@
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from subscriptions.models.subscription import SubscriptionStatus
 from subscriptions.services.interfaces import ISubscriptionStatusManager
 from subscriptions.services.repository import SubscriptionRepository
-from subscriptions.models.subscription import SubscriptionStatus
 from subscriptions.services.validator import SubscriptionValidator
 
 

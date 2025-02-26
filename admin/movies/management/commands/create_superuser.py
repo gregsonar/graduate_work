@@ -1,9 +1,11 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
-from django.db import IntegrityError
 import os
+
 import requests
 from dotenv import load_dotenv
+
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand
+from django.db import IntegrityError
 
 load_dotenv()
 

@@ -1,10 +1,11 @@
 # auth/tests/test_breaker.py
+import asyncio
+import json
 from unittest.mock import AsyncMock
 
 import pytest
+
 from auth.core.breaker import CircuitState
-import asyncio
-import json
 
 
 @pytest.mark.asyncio

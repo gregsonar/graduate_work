@@ -2,16 +2,15 @@ import json
 from dataclasses import dataclass
 
 import pika
-from pika import BlockingConnection
-from pika.adapters.blocking_connection import BlockingChannel
 from notification_scheduler.helpers.data_getter import User
-
 from notification_scheduler.settings.config import (
     RABBIT_HOST,
-    RABBIT_USER,
     RABBIT_PASS,
     RABBIT_RULE_MESSAGE_QUEUE,
+    RABBIT_USER
 )
+from pika import BlockingConnection
+from pika.adapters.blocking_connection import BlockingChannel
 
 
 def prep_conn(queue_name: str) -> (BlockingConnection, BlockingChannel):

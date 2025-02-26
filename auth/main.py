@@ -1,21 +1,19 @@
 from contextlib import asynccontextmanager
+
 import uvicorn
-
-from fastapi.middleware.cors import CORSMiddleware
+from api.v1 import auth_api, role_api
+from core.config import config
+from core.middleware.http import setup_middleware
+from core.tracer import configure_tracer
+from db import redis_db
 from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
-from redis.asyncio import Redis
-
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from core.middleware.http import setup_middleware
+from redis.asyncio import Redis
+
 from auth.api.v1.oauth.base_oauth_router import vk_router, yandex_router
-
-from core.config import config
-from db import redis_db
-from api.v1 import role_api, auth_api
-
-from core.tracer import configure_tracer
 from auth.db.redis_db import get_redis
 
 

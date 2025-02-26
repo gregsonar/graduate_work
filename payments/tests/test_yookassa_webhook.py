@@ -1,10 +1,13 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
-from yookassa.domain.notification import WebhookNotification
 from yookassa.domain.exceptions import ApiError
+from yookassa.domain.notification import WebhookNotification
+
 from payments.webhook_app import app
 
+pytestmark = pytest.mark.asyncio
 client = TestClient(app)
 
 
@@ -14,7 +17,6 @@ def mock_yookassa_provider():
         yield mock_provider
 
 
-@pytest.mark.asyncio
 async def test_yookassa_webhook_payment_succeeded(mock_yookassa_provider):
     event_json = {
         "event": "payment.succeeded",
@@ -33,7 +35,6 @@ async def test_yookassa_webhook_payment_succeeded(mock_yookassa_provider):
         assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
 async def test_yookassa_webhook_payment_waiting_for_capture(mock_yookassa_provider):
     event_json = {
         "event": "payment.waiting_for_capture",
@@ -53,7 +54,6 @@ async def test_yookassa_webhook_payment_waiting_for_capture(mock_yookassa_provid
         mock_yookassa_provider.capture_payment.assert_called_once_with("payment_id_123")
 
 
-@pytest.mark.asyncio
 async def test_yookassa_webhook_payment_canceled(mock_yookassa_provider):
     event_json = {
         "event": "payment.canceled",
@@ -72,7 +72,6 @@ async def test_yookassa_webhook_payment_canceled(mock_yookassa_provider):
         assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
 async def test_yookassa_webhook_api_error(mock_yookassa_provider):
     event_json = {
         "event": "payment.waiting_for_capture",
@@ -94,7 +93,6 @@ async def test_yookassa_webhook_api_error(mock_yookassa_provider):
         assert response.json()["detail"] == "Ошибка API: API Error"
 
 
-@pytest.mark.asyncio
 async def test_yookassa_webhook_general_error(mock_yookassa_provider):
     event_json = {
         "event": "payment.waiting_for_capture",

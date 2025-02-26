@@ -1,27 +1,20 @@
 from __future__ import annotations
+
 import uuid
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
-from datetime import datetime, timedelta
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    String,
-    Index,
-    JSON,
-    ForeignKey,
-    Enum as SQLEnum,
-    DateTime,
-    text,
-    PrimaryKeyConstraint,
-)
+from sqlalchemy import JSON, Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Index, PrimaryKeyConstraint, String, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import Mapped, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from auth.db.postgres import Base
-from .base_models import TimestampMixin, SocialProvider
+
+from .base_models import SocialProvider, TimestampMixin
 
 
 def create_partition(target, connection, **kw) -> None:

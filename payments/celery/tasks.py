@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 import aiohttp
 from celery import Celery
 from dotenv import load_dotenv
+
 from payments import db
 from payments.models.payment_jobs import PaymentJob
 from payments.providers.yookassa_provider import YooKassaProvider

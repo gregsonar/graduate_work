@@ -1,6 +1,7 @@
-from datetime import datetime, timezone, UTC
 import uuid
-from sqlalchemy import DateTime, String, MetaData, Column
+from datetime import UTC, datetime, timezone
+
+from sqlalchemy import Column, DateTime, MetaData, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase
 

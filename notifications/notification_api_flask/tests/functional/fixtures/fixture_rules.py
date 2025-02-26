@@ -1,5 +1,6 @@
-from pytest import fixture
 from typing import Tuple
+
+from pytest import fixture
 
 
 @fixture

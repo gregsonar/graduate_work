@@ -1,10 +1,13 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from subscriptions.services.interfaces import ISubscriptionHistoryManager
 from subscriptions.models.subscription import SubscriptionHistory
-from subscriptions.schemas.subscription_schema import SubscriptionHistoryResponse
+from subscriptions.schemas.subscription_schema import (
+    SubscriptionHistoryResponse
+)
+from subscriptions.services.interfaces import ISubscriptionHistoryManager
 
 
 class SubscriptionHistoryManager(ISubscriptionHistoryManager):

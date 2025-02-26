@@ -1,11 +1,20 @@
-from enum import Enum
-from uuid import UUID
 from decimal import Decimal
+from enum import Enum
 from typing import Literal
+from uuid import UUID
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator, AwareDatetime
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator
+)
 
-from subscriptions.models.subscription import SubscriptionPlanType, SubscriptionStatus
+from subscriptions.models.subscription import (
+    SubscriptionPlanType,
+    SubscriptionStatus
+)
 
 
 class SubscriptionStatus(str, Enum):

@@ -1,18 +1,19 @@
 from http import HTTPStatus
 
+from fastapi import APIRouter, Depends
+
 from billing.src.api.dependencies import get_current_user
 from billing.src.schemas.payment_schemas import (
     CreatedPaymentSchema,
     CreatePaymentSchema,
     DetailResponse,
-    SubscriptionCancel,
+    SubscriptionCancel
 )
 from billing.src.schemas.tariff_schemas import PaymentSchema
 from billing.src.services.billing_service import (
     BillingService,
-    get_billing_service,
+    get_billing_service
 )
-from fastapi import APIRouter, Depends
 
 router = APIRouter()
 

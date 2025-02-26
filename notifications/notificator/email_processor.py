@@ -1,10 +1,10 @@
-import uuid
 import json
 import smtplib
-import psycopg2
-
+import uuid
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import psycopg2
 from jinja2 import Environment, FileSystemLoader
 
 

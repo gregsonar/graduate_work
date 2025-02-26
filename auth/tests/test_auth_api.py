@@ -1,18 +1,19 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from fastapi import HTTPException, status
 from uuid import UUID
 
+import pytest
+from fastapi import HTTPException, status
+
 from auth.api.v1.auth_api import (
-    router,
     AuthRequest,
     TokenResponse,
     UserCreate,
     get_current_user,
-    logout,
     login,
+    logout,
     refresh,
     register,
+    router
 )
 from auth.services.auth_service import AuthService
 from auth.services.token_service import TokenService

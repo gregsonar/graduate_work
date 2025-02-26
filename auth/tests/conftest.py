@@ -1,22 +1,25 @@
+import asyncio
 import os
 import sys
-import pytest
-from typing import AsyncGenerator, Generator
-import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
 import uuid
+from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock
-from pydantic_settings import BaseSettings
 
-from redis.asyncio import Redis
+import pytest
 from async_fastapi_jwt_auth import AuthJWT
+from pydantic_settings import BaseSettings
+from redis.asyncio import Redis
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    create_async_engine
+)
+from sqlalchemy.orm import sessionmaker
 
 from auth.core.breaker import AsyncCircuitBreaker
-from auth.services.auth_service import AuthService
 from auth.db.redis_db import get_redis, redis
-
+from auth.services.auth_service import AuthService
 from auth.services.token_service import TokenService
 
 # Добавляем корневую директорию проекта в PYTHONPATH
@@ -25,10 +28,10 @@ project_root = os.path.dirname(
 )
 sys.path.insert(0, project_root)
 
+from auth.db.postgres import Base
 from auth.models.role import Role
 from auth.models.user import User
 from auth.models.user_role import UserRole
-from auth.db.postgres import Base
 
 # Настройки тестовой базы данных
 TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/test_db"

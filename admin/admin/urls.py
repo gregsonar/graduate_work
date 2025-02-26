@@ -14,11 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from core.auth.views import custom_logout
+from core.views import healthcheck
+
 from django.contrib import admin
 from django.urls import include, path
-from core.auth.views import custom_logout
-
-from core.views import healthcheck
 
 urlpatterns = [
     path("admin/logout/", custom_logout, name="custom_admin_logout"),

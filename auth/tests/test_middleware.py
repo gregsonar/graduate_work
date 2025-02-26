@@ -1,11 +1,13 @@
 from uuid import UUID
+
 import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from opentelemetry.trace import SpanKind
+
+from auth.core.middleware.http import request_limit_middleware
 from auth.core.middleware.request_limit import RequestLimit
 from auth.core.middleware.tracker import RequestTracker
-from auth.core.middleware.http import request_limit_middleware
 
 pytestmark = pytest.mark.asyncio
 

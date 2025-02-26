@@ -1,15 +1,14 @@
 import json
-from flask_cors import CORS
 
 from flask import Flask, send_from_directory
-from werkzeug.exceptions import HTTPException
-
+from flask_cors import CORS
 from settings.config import configurations
 from settings.extensions import db, logger
 from views.message import MessageAPI
 from views.new_user import UserCreatedAPI
 from views.rule import RuleAPI
 from views.to_all import SendGlobalMessageAPI
+from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
 CORS(app)

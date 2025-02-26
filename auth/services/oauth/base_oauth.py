@@ -1,11 +1,12 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
-import secrets
 import base64
 import hashlib
+import secrets
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+
 import aiohttp
-from redis.asyncio import Redis
 from fastapi import HTTPException, status
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import OAuthProviderSettings

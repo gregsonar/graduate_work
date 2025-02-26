@@ -1,25 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.api.v1.oauth.base_oauth_router import vk_router, yandex_router
+from auth.core.decorators import validate_roles
+from auth.db.crud import AccessLogRepository
 from auth.db.postgres import get_session
 from auth.db.redis_db import get_redis
-from auth.services.auth_service import AuthService
-from auth.services.token_service import TokenService
 from auth.schemas.auth_schema import (
     AuthRequest,
-    TokenResponse,
-    LogoutResponse,
     CurrentUserResponse,
+    LogoutResponse,
+    TokenResponse
 )
-from auth.schemas.password_schema import PasswordChangeRequest, PasswordChangeResponse
 from auth.schemas.entity import UserCreate
-from auth.core.decorators import validate_roles
-from typing import Dict, Any
-
-from auth.db.crud import AccessLogRepository
+from auth.schemas.password_schema import (
+    PasswordChangeRequest,
+    PasswordChangeResponse
+)
+from auth.services.auth_service import AuthService
+from auth.services.token_service import TokenService
 
 router = APIRouter(
     responses={

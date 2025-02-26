@@ -2,9 +2,8 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy.dialects.postgresql import UUID
-
 from settings.extensions import db
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class Roles(enum.Enum):

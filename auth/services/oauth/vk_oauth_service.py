@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import HTTPException, status
 
 from auth.core.config import oauth_config
 from auth.models.base_models import SocialProvider
+
 from .base_oauth import BaseOAuthService, PKCEFlowStrategy
 
 

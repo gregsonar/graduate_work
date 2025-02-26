@@ -1,5 +1,5 @@
 import logging
-from typing import Type, Dict, Any, List
+from typing import Any, Dict, List, Type
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

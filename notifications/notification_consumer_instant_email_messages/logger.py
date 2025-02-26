@@ -4,7 +4,6 @@ from logging.handlers import RotatingFileHandler
 
 import logstash
 
-
 logger = logging.getLogger("notification_consumer_instant_email_sender_app")
 logger.setLevel(logging.INFO)
 

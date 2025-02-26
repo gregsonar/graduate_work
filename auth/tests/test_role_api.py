@@ -1,21 +1,25 @@
+import uuid
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
-import uuid
-from unittest.mock import AsyncMock, patch, MagicMock
 
-from auth.schemas.role_schema import UpdateRoleRequest, UserRoleAssignment, RoleResponse
-from auth.services.role_service import RoleService
-from auth.api.v1.role_api import get_current_user_roles
 from auth.api.v1.role_api import (
-    get_roles,
-    get_role,
-    update_role,
-    delete_role,
     assign_users_to_role,
     create_role,
+    delete_role,
+    get_current_user_roles,
+    get_role,
+    get_roles,
+    update_role
 )
+from auth.schemas.role_schema import (
+    RoleResponse,
+    UpdateRoleRequest,
+    UserRoleAssignment
+)
+from auth.services.role_service import RoleService
 
 
 # Tests for get_roles endpoint

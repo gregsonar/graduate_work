@@ -1,12 +1,12 @@
-from flask.views import MethodView
-from flask import request, Response, jsonify
-from werkzeug.exceptions import HTTPException
-from http.client import OK, BAD_REQUEST
+from http.client import BAD_REQUEST, OK
 
-from services.serialization_schemas import MessageSchema
+from flask import Response, jsonify, request
+from flask.views import MethodView
 from services.rabbit_mq import send_instant_message
+from services.serialization_schemas import MessageSchema
 from services.users import find_user_by_id
 from settings.extensions import logger
+from werkzeug.exceptions import HTTPException
 
 
 class MessageAPI(MethodView):

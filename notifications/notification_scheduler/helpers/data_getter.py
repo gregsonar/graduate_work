@@ -4,7 +4,6 @@ from typing import Generator, Optional
 from uuid import UUID
 
 import psycopg2
-
 from notification_scheduler.settings.config import AUTH_DSL
 
 

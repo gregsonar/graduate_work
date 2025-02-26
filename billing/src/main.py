@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Request
+from fastapi.responses import ORJSONResponse
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from billing.src.api import healthcheck
 from billing.src.api.v1 import billing, tariffs
 from billing.src.core.config import settings
 from billing.src.core.exceptions import BaseErrorWithContent
 from billing.src.db import postgres
-from fastapi import FastAPI, Request
-from fastapi.responses import ORJSONResponse
-from sqlalchemy.ext.asyncio import create_async_engine
 
 
 @asynccontextmanager

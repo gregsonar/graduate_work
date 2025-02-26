@@ -1,9 +1,8 @@
-import os
 import logging
+import os
 import sys
 
 from logstash_async.handler import AsynchronousLogstashHandler
-
 
 logstash_host = os.getenv("LOGSTASH_HOST", "logstash")
 logstash_port = int(os.getenv("LOGSTASH_PORT", 5044))

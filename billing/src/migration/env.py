@@ -1,11 +1,12 @@
 import asyncio
 
 from alembic import context
-from billing.src.core.config import settings
-from billing.src.db.postgres import Base
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from billing.src.core.config import settings
+from billing.src.db.postgres import Base
 
 config = context.config
 

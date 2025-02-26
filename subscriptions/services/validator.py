@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Dict, Set
 
+from subscriptions.core.exceptions import InvalidStatusTransitionException
 from subscriptions.models.subscription import SubscriptionStatus
 from subscriptions.services.interfaces import ISubscriptionValidator
-from subscriptions.core.exceptions import InvalidStatusTransitionException
 
 
 class SubscriptionValidator(ISubscriptionValidator):

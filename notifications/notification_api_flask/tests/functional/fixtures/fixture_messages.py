@@ -1,6 +1,5 @@
-from pytest import fixture
-
 from functional.utils.db import get_valid_user_id
+from pytest import fixture
 
 
 @fixture

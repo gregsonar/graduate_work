@@ -1,6 +1,7 @@
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -8,8 +9,8 @@ from subscriptions.core.config import settings
 from subscriptions.models.base_models import Base
 from subscriptions.models.subscription import (
     Subscription,
-    SubscriptionStatus,
     SubscriptionPlanType,
+    SubscriptionStatus
 )
 
 

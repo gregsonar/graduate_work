@@ -1,15 +1,14 @@
-from django.http import JsonResponse
-from django.views.generic.detail import BaseDetailView
-from django.views.generic.list import BaseListView
-from django.db.models import Prefetch
-from django.core.paginator import Paginator
-from django.http import Http404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from elasticsearch_dsl import Search, Q
+from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.query import MatchAll, MultiMatch, Nested, Term
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from django.conf import settings
+from django.core.paginator import Paginator
+from django.db.models import Prefetch
+from django.http import Http404, JsonResponse
+from django.views.generic.detail import BaseDetailView
+from django.views.generic.list import BaseListView
 
 from ...models import FilmWork, PersonFilmWork
 from .serializers import MovieSerializer

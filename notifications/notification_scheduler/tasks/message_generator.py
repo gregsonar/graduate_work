@@ -1,20 +1,18 @@
-from typing import Generator
 from dataclasses import dataclass
+from typing import Generator
 
 import psycopg2
-
 from celery.utils.log import get_task_logger
 from notification_scheduler.helpers.data_getter import TemplateDataGetter
 from notification_scheduler.helpers.rabbit_mq import (
-    send_message_to_queue,
     EmailMessage,
+    send_message_to_queue
+)
+from notification_scheduler.helpers.template_render import (
+    UsersTemplateRender,
+    render_template
 )
 from notification_scheduler.settings.config import DSL, RULE_TABLE
-from notification_scheduler.helpers.template_render import (
-    render_template,
-    UsersTemplateRender,
-)
-
 
 logger = get_task_logger(__name__)
 

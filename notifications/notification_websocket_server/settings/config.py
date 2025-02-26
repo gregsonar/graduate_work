@@ -1,6 +1,5 @@
 import os
 
-
 RABBIT_HOST = os.getenv("RABBITMQ_HOST")
 RABBIT_USER = os.getenv("RABBITMQ_DEFAULT_USER")
 RABBIT_PASS = os.getenv("RABBITMQ_DEFAULT_PASS")

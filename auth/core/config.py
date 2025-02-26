@@ -2,9 +2,9 @@ import os
 from logging import config as logging_config
 from typing import Optional
 
-from pydantic import Field, BaseModel
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .logger import LOGGING
 

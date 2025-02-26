@@ -4,11 +4,11 @@ from subscriptions.models.subscription import (
     SubscriptionHistory,
     SubscriptionPlan,
     SubscriptionPlanType,
-    SubscriptionStatus,
+    SubscriptionStatus
 )
 from subscriptions.models.user_subscription import (
     UserSubscription,
-    UserSubscriptionHistory,
+    UserSubscriptionHistory
 )
 
 __all__ = [

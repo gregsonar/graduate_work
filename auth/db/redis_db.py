@@ -1,6 +1,7 @@
 # db/redis_db.py
 from contextlib import asynccontextmanager
 from typing import Optional
+
 from redis.asyncio import Redis
 
 from auth.core.config import RedisSettings

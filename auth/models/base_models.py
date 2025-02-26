@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import Column, DateTime, Boolean
+
+from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped
 

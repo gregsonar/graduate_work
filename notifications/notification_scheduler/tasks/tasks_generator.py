@@ -1,12 +1,10 @@
 import psycopg2
 from celery import Celery, Task
 from celery.schedules import crontab
-from psycopg2.extras import RealDictCursor
-
 from notification_scheduler.helpers.data_getter import TimeTable
 from notification_scheduler.settings.config import DSL, TIME_TABLE
 from notification_scheduler.settings.extensions import logger
-
+from psycopg2.extras import RealDictCursor
 
 TIME_TABLE_IDS = {}
 

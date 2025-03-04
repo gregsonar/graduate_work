@@ -22,10 +22,11 @@ sequenceDiagram
     Pay-->>Bill: Payment processed
     Bill-->>-NGINX: Payment successful
 
-    NGINX->>+Sub: Create subscription
+    Bill->>+Sub: Create subscription
     Sub->>Sub: Validate request
     Sub->>Sub: Create subscription record
-    Sub-->>-NGINX: Subscription created
+    Sub-->>Bill: Subscription created
+    Bill-->> NGINX: Subscription created
 
     NGINX->>+Notif: Notify about new subscription
     Notif->>RMQ: Publish event
